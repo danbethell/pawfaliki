@@ -48,9 +48,13 @@ function writeFileFromPatch( $title, $patch )
 {
 	emailPatch( $title, $patch );
   $filename = pagePath( $title );
-	$fd = fopen( $filename, "r");
-	$contents = fread( $fd, filesize($filename) );
-	fclose( $fd );
+  $size = filesize($filename);
+  if ( $size>0 )
+  {
+		$handle = fopen($filename, "r");
+		$contents = fread($handle, $size);
+		fclose($handle);					
+  }		
 	$newcontents = txt_patch( $contents, $patch ); 
 	$fd = fopen( pagePath( $title ), "w" );
 	fwrite( $fd, $newcontents );
@@ -124,7 +128,7 @@ function updateWiki( &$mode, $title, $config )
 	{
 		if ( isset($_POST['contents']) )
     {
-    	$oldcontents = $_POST['oldcontents'];
+    	$oldcontents = stripslashes( $_POST['oldcontents'] );
     	$contents = stripslashes( $_POST['contents'] );
       
       $patch = diff( $oldcontents, $contents );
@@ -392,9 +396,13 @@ function displayPage( $title, &$mode )
 		
 				// need to use this code if php version < 4.3.0
 				$filename = pagePath( $title );
-				$handle = fopen($filename, "r");
-				$contents = fread($handle, filesize($filename));
-				fclose($handle);					
+        $size = filesize($filename);
+        if ( $size>0 )
+        {
+					$handle = fopen($filename, "r");
+					$contents = fread($handle, $size);
+					fclose($handle);					
+        }			
 			}
 			else
 			{
