@@ -27,9 +27,23 @@ $config['LINK'] = "lime";
 $config['VLINK'] = "lime";
 $config['ALINK'] = "green";
 
+$config['VERBATIM'] = array();
+
 function latestVersion( $title )
-{
-	$results = glob( pageDir( $title ).$title."_v*" );
+{  
+	$results = array();
+	
+	if ($dh = opendir(pageDir( $title )))
+	{
+  	while (($file = readdir($dh)) !== false) 
+  	{
+  		if (preg_match( "/".$title."_v*/", $filename ) )
+  			$results[count($results)] = $file;
+    }
+    closedir($dh);
+  }
+   
+//	$results = glob( pageDir( $title ).$title."_v*" );
 	$num=0;
 	for ($i=0; $i<count($results); $i++)
 	{
@@ -123,7 +137,7 @@ function htmlheader( $title, $config )
   	echo(" LINK=\"".$config['LINK']."\" ");
   	echo(" VLINK=\"".$config['VLINK']."\" ");
   	echo(" ALINK=\"".$config['ALINK']."\" ");
-  	echo(">\n\t\t<H1><PRE>".$title."</PRE></H1>\n");
+  	echo(">\n\t\t<PRE><TABLE WIDTH=\"100%\" BORDER=\"0\"><TR><TD ALIGN=\"LEFT\"><H1>".$title."</H1></TD><TD ALIGN=\"RIGHT\">".wikilink( "HomePage" )."</TD></TR></TABLE></PRE>\n");
 }
 
 function htmlfooter()
@@ -159,6 +173,24 @@ function rawtext( $text )
 	return $text;
 }
 
+function externallink( $text )
+{
+	$results = explode( "|", $text );
+	$size=count($results);
+	if ($size==0)
+		return $text;	
+	
+	$src=$results[0];
+	$desc="";
+	if ($size>1)
+		$desc = $results[1];
+	else
+		$desc = $src;
+		
+	$resultstr = "<A HREF=\"".$src."\">".$desc."</A>";		
+	return verbatim( $resultstr );
+}
+
 function image( $text )
 {
 	$results = explode( "|", $text );
@@ -188,7 +220,23 @@ function image( $text )
 	if ($size>0)
 		$resultstr = "<IMG".$src.$desc.$h.$w.$al.$val.">";
 		
-	return $resultstr;
+	return verbatim( $resultstr );
+}
+
+function getVerbatim( $index )
+{
+	global $config;
+	$verbat = &$config['VERBATIM'];
+	return $verbat[$index];
+}
+
+function verbatim( $contents )
+{
+	global $config;
+	$verbat = &$config['VERBATIM'];
+	$index = count($verbat);
+	$verbat[$index] = $contents;
+	return "\".getVerbatim(".$index.").\"";
 }
 
 function wikiparse( $contents )
@@ -204,31 +252,40 @@ function wikiparse( $contents )
   //  special chars - ~169~ - NOT IMPLEMENTED YET!
   //  unicode special chars - ~U:450373~ - NOT IMPLEMENTED YET!
 	
-	// bold
-	$patterns[1] = "/\*\*(.*)\*\*/";
-	$replacements[1] = "<B>$1</B>";
-	// italic
-	$patterns[2] = "/''(.*)''/";
-	$replacements[2] = "<I>$1</I>";
-	// underline
-	$patterns[3] = "/__(.*)__/";
-	$replacements[3] = "<U>$1</U>";
+	// verbatim text
+	$patterns[0] = "/~~~(.*)~~~/";
+	$replacements[0] = "\".verbatim( \"$1\" ).\"";	
 	// external links
-	$patterns[4] = "/\[\[(.*)\]\]/";
-	$replacements[4] = "<A HREF=\\\"$1\\\">$1</A>";	
-	
-	// wikiwords
-	$patterns[5] = "/([A-Z][a-z0-9]+[A-Z][A-Za-z0-9]+)/";
-	$replacements[5] = "\".wikilink( \"$1\" ).\"";	
-	
+	$patterns[1] = "/\[\[(.*)\]\]/";
+	$replacements[1] = "\".externallink( \"$1\" ).\"";		
 	// images
-	$patterns[6] = "/{{(.*)}}/";
-	$replacements[6] = "\".image( \"$1\" ).\"";	
+	$patterns[2] = "/{{(.*)}}/";
+	$replacements[2] = "\".image( \"$1\" ).\"";	
 	
+	// substitue complex expressions
 	$cmd = (" \$contents = \"".preg_replace( $patterns, $replacements, $contents )."\";");
-	eval($cmd);
+	eval($cmd);	
 				
-	return $contents;
+	// bold
+	$patterns[0] = "/\*\*(.*)\*\*/";
+	$replacements[0] = "<B>$1</B>";
+	// italic
+	$patterns[1] = "/''(.*)''/";
+	$replacements[1] = "<I>$1</I>";
+	// underline
+	$patterns[2] = "/__(.*)__/";
+	$replacements[2] = "<U>$1</U>";	
+	$patterns[3] = "/([A-Z][a-z0-9]+[A-Z][A-Za-z0-9]+)/";
+	$replacements[3] = "\".wikilink( \"$1\" ).\"";	
+	
+	// substitute simple expressions
+	$contents = preg_replace( $patterns, $replacements, $contents );		
+
+	// final expansion
+	$cmd = (" \$contents = \"".$contents."\";");
+	eval($cmd);		
+	
+  return $contents;
 }
 
 function pageDir( $title )
@@ -255,7 +312,15 @@ function displayPage( $title, &$mode )
 { 	
 	$contents = "";
 	if ( pageExists( $title ) )
-		$contents = file_get_contents( pagePath( $title ) );
+	{
+		// get contents of a file into a string
+		$filename = pagePath( $title );
+		$handle = fopen($filename, "r");
+		$contents = fread($handle, filesize($filename));
+		fclose($handle);
+	
+//		$contents = file_get_contents( pagePath( $title ) );
+	}
 	else
 	{
 		$contents = "This is the page for ".$title."!";
