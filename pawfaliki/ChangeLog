@@ -1,11 +1,10 @@
 == pawfaliki-0.1.0 (10/08/2004) ==
 * Initial version of everything.
 
-== pawfaliki-0.2.0 (??/??/2004) ==
+== pawfaliki-0.2.0 (10/11/2004) ==
 * Added CSS support.
-* Added page diff emailing. (TBA)
 * Fixed wordwrapping bugs.
 * Fixed coloured text bugs.
-* Everything "should" be strict html4.0 compliant.
+* Everything should be transitional html4.0 compliant.
 * Added licensing information.
 * Added locking page support.

@@ -21,26 +21,25 @@
 // setup some storage
 $config = array();
 $config['VERBATIM'] = array();
-$config['SPECIAL'] = array();
 $config['LOCKED'] = array();
 $config['BLOCKED_IPS'] = array();
 $config['ERRORS'] = array();
-$p_diff = new PawfalikiDiff();
+$config['SPECIAL'] = array();
+$config['SPECIAL']['PageList'] = 1;
 
 //===========================================================================
 //===========================================================================
 // CONFIG:
 // This section contains variables to configure various aspects of the wiki
-$config['TITLE'] = "Hello";
-$config['HOMEPAGE'] = "HomePage";	
-$config['BUTTONPREFIX'] = "[";
-$config['BUTTONSUFFIX'] = "]";
-$config['CHANGES_TO'] = "";
-$config['LOCKED']['HomePage'] = 1;
-$config['SPECIAL']['PageList'] = 1;
-$config['ADMIN'] = "webmaster at pawfal dot org";
-$config['ADMIN_EMAIL'] = "webmaster@pawfal.org";
-
+$config['TITLE'] = "Pawfaliki"; // Call the wiki
+$config['HOMEPAGE'] = "Pawfaliki"; // Call the homepage
+$config['ADMIN'] = "webmaster at here dot there"; // printed on error messages
+/*
+	$config['CSS'] = "Pawfaliki:pawfaliki.css"; // title:filename
+*/
+/*
+	$config['LOCKED']['HomePage'] = 1; // lock the homepage
+*/
 //===========================================================================
 //===========================================================================
 
@@ -49,7 +48,7 @@ function license()
 {
 	?>
 			<!-- Creative Commons License -->
-			This work is licensed under a <a rel="license" CLASS="wiki_external" href="http://creativecommons.org/licenses/by-sa/2.0/">Creative Commons License</a>.
+			This work is licensed under a <a rel="license" href="http://creativecommons.org/licenses/by-sa/2.0/">Creative Commons License</a>.
 			<!-- /Creative Commons License -->
 			<!--
 			<rdf:RDF xmlns="http://web.resource.org/cc/"
@@ -75,125 +74,14 @@ function license()
 // initialise our style sheets
 function css()
 {
-	echo("\t<STYLE TYPE=\"text/css\">\n");
-  ?>
-<!--
-	body
-	{
-		background-color: black;
-		color: white; 
-		font-family: courier-new, monospace;
-		font-size: 12px;  
-		margin-left: 6px;
-		margin-right: 18px;
-	}
-  
-	td.wiki_header
-	{
-		font-size: 24px;
-		font-weight: bold;    
-	}
-  
-	pre.wiki_body
-	{
-		width: 100%;
-		font-family: courier-new, monospace;
-		padding-left: 4px;
-		padding-right: 4px;
-	}
-  
-	hr.wiki_break
-	{  
-		border-style: none;
-		border-top-style: solid;
-		border-width: 1px;
-		border-color: #666666;
-	}
-  
-	a
-	{
-		text-decoration: none;  
-	}
-  
-	a.wiki_internal
-	{
-		color: lime;
-	}
-    
-	a.wiki_internal:hover
-	{
-		color: black;
-		background: lime;
-	}
-  
-	a.wiki_internal:active
-	{
-		color: green;
-	}
-  
-	a.wiki_external
-	{
-		color: lime;
-	}
-    
-	a.wiki_external:hover
-	{
-		color: black;
-		background: lime;
-	}
-  
-	a.wiki_external:active
-	{
-		color: green;
-	}
-  
-	input.wiki_btn
-	{	
-		font-family: courier-new, monospace;
-		font-size: 12px; 
-		color: lime;
-		background: black;
-		border-style: none;
-		padding: 0px;
-		cursor: pointer;
-	}
-  
-	input.wiki_btn:hover
-	{	
-		color: black;
-		background: lime;
-	}
-  
-	input.wiki_btn:active
-	{	
-		color: green;
-	}  
-  
-	p.error
-	{
-		font-weight: bold;
-		text-align: center;
-		padding: 3px;
-		border-style: solid;
-		border-width: 1px;
-		color: red;
-	}
-        
-	textarea.wiki_edit
-	{	
-		font-family: courier-new, monospace;
-		font-size: 12px; 
-		color: black;
-		background: white;
-		padding: 4px;
-		border-style: none; 
-		height: 320px;
-		width: 99%;
-	}
-  
--->
-  <?php
-	echo("\t</STYLE>\n");
+	global $config;
+	if (isset( $config['CSS'] ) )
+  {
+  	$tokens = explode(":", $config['CSS'] );
+    $title = $tokens[0];
+		$path = implode(":", array_slice( $tokens, 1));
+    echo( "\t<LINK REL=\"stylesheet\" TYPE=\"text/css\" HREF=\"".$path."\" TITLE=\"".$title."\">\n");
+  }
 }
 
 // writes a file to disk
@@ -234,42 +122,6 @@ function read_dir($path)
 		closedir($handle);
 	}
   return $results;
-}
-
-// writes a new file from a patched original
-function writeFileFromPatch( $title, $patch )
-{
-	$newcontents = "";
-	if (!isIpBlocked())
-  {
-		global $p_diff;
-		emailPatch( $title, $patch );
-	  $contents = read_file( pagePath( $title ) );
-		$newcontents = $p_diff->txt_patch( $contents, $patch ); 
-		$fd = fopen( pagePath( $title ), "w" );
-		fwrite( $fd, $newcontents );
-		fclose( $fd );
-  }
-  return $newcontents;	
-}
-
-// emails a patch to the CHANGES_TO email address
-function emailPatch( $title, $patch )
-{
-	global $config, $p_diff;	
-  if ($config['CHANGES_TO']!=""&&$patch!="")
-  {
-	  $ipaddress = $_SERVER['REMOTE_ADDR'];
-	  $subject = $title." :: ".gethostbyaddr($ipaddress)." (".$ipaddress.")";
-    $patcharray = $p_diff->splitWithNL( $patch );
-    $body = "";
-    foreach ( $patcharray as $p )
-    {
-    	if (strlen(trim($p))>0)
-      	$body.=trim($p)."\n";
-    }
-		mail( $config['CHANGES_TO'], $subject, $body, "From: ".$config['ADMIN_EMAIL']."\r\n" );
- 	}
 }
 
 // init the wiki if no pages exist
@@ -317,7 +169,6 @@ function getMode( $config )
 // update the wiki (someone clicked save)
 function updateWiki( &$mode, $title, $config )
 {
-	global $p_diff;
 	$result = "";
 	if ( $mode=="save" )
 	{
@@ -328,9 +179,6 @@ function updateWiki( &$mode, $title, $config )
       
       // write file      
       writeFile( $title, $contents );
-			
-      //$patch = $p_diff->diff( $oldcontents, $contents );
-      //$result = writeFileFromPatch( $title, $patch );
     }
 		$mode = "display";
 	}
@@ -346,7 +194,7 @@ function htmlheader( $title, $config )
 {
 	if ($title=="HomePage") 
   	$title = $config["HOMEPAGE"];    
-	echo("<!DOCTYPE HTML PUBLIC \"-//W3C//DTD HTML 4.01//EN\" \"http://www.w3.org/TR/html4/strict.dtd\">\n");
+	echo("<!DOCTYPE HTML PUBLIC \"-//W3C//DTD HTML 4.01 Transitional//EN\" \"http://www.w3.org/TR/html4/loose.dtd\">\n");
 	echo("<HTML>\n");
   echo("<HEAD>\n");
 	echo("\t<META HTTP-EQUIV=\"Content-Type\" CONTENT=\"text/html; charset=ISO-8859-1\">\n");
@@ -358,16 +206,16 @@ function htmlheader( $title, $config )
 		echo($config["TITLE"]." :: ".$title);	
   echo("</TITLE>\n");
   echo("</HEAD>\n");
-	echo("<BODY TEXT=\"white\">\n");
+	echo("<BODY>\n");
 
 	// any errors?
 	foreach ($config['ERRORS'] as $err)
 		echo( "<P CLASS=\"error\">".$err."</P>" );
 
-  echo("\t<TABLE CLASS=\"wiki_top\" WIDTH=100%>\n");
+  echo("\t<TABLE WIDTH=\"100%\">\n");
   echo("\t\t<TR>\n");
-  echo("\t\t\t<TD CLASS=\"wiki_header\">".$title."</TD>\n");
-  echo("\t\t\t<TD CLASS=\"wiki_page_buttons\" ALIGN=\"right\">".wikiparse( $config['BUTTONPREFIX']."HomePage".$config['BUTTONSUFFIX']." ".$config['BUTTONPREFIX']."PageList".$config['BUTTONSUFFIX'] )."</TD>\n");
+  echo("\t\t\t<TD ALIGN=\"left\"><SPAN CLASS=\"wiki_header\">".$title."</SPAN></TD>\n");
+  echo("\t\t\t<TD ALIGN=\"right\">".wikiparse( "HomePage PageList" )."</TD>\n");
   echo("\t\t</TR>\n");
   echo("\t</TABLE>\n");
 }
@@ -382,13 +230,13 @@ function htmlfooter()
 function htmlstartblock()
 {
 	echo("\n<!-- PAGE BODY -->\n");
-  echo("<HR CLASS=\"wiki_break\">\n");
+  echo("<HR>\n");
 }
 
 // the end of our wiki body
 function htmlendblock()
 {
-  echo("<HR CLASS=\"wiki_break\">\n");
+  echo("<HR>\n");
 	echo("<!-- END OF PAGE BODY -->\n\n");
 }
 
@@ -396,9 +244,9 @@ function htmlendblock()
 function wikilink( $title )
 {
 	if ( pageExists( $title ) )
-		return ("<A HREF=\"".$_SERVER['PHP_SELF']."?page=".$title."\" CLASS=\"wiki_internal\">".$title."</A>");
+		return ("<A HREF=\"".$_SERVER['PHP_SELF']."?page=".$title."\">".$title."</A>");
 	else
-		return ($title."<A HREF=\"".$_SERVER['PHP_SELF']."?page=".$title."\" CLASS=\"wiki_internal\">?</A>");
+		return ($title."<A HREF=\"".$_SERVER['PHP_SELF']."?page=".$title."\">?</A>");
 }
 
 // link to an external web page
@@ -414,7 +262,7 @@ function externallink( $text )
 		$desc = $results[1];
 	else
 		$desc = $src;		
-	$resultstr = "<A HREF=\"".$src."\" CLASS=\"wiki_external\">".$desc."</A>";		
+	$resultstr = "<A HREF=\"".$src."\">".$desc."</A>";		
 	return verbatim( $resultstr );
 }
 
@@ -426,9 +274,7 @@ function colouredtext( $text )
 	if ($size<2)
 		return $text;		
 	$colour=$results[0];
-	$contents=$results[1];
-	$tokens = array_slice( $results, 1);
-	$contents = implode(":", $tokens);			
+	$contents = implode(":", array_slice( $results, 1));			
 	$resultstr = "<SPAN STYLE=\"color: #".$colour.";\">".$contents."</SPAN>";
 	return verbatim( $resultstr );
 }
@@ -527,8 +373,8 @@ function wikiparse( $contents )
 
 	// final expansion
 	$cmd = (" \$contents = \"".$contents."\";");
-	eval($cmd);		
-	
+	eval($cmd);	
+  
   return $contents;
 }
 
@@ -634,14 +480,13 @@ function displayPage( $title, &$mode, $contents="" )
 	switch ($mode)
   {
   	case "display":
-			echo("<PRE CLASS=\"wiki_body\" WIDTH=\"100%\">\n");
+			echo("<PRE WIDTH=\"100\">\n");
 			echo( wikiparse( $contents ) );
       echo("</PRE>\n");
       break;
     case "edit": case "editnew":
-			echo( "<FORM CLASS=\"wiki_edit\" ACTION=\"".$_SERVER['PHP_SELF']."?page=".$title."\" METHOD=\"post\">\n" );
-      //echo( "<INPUT TYPE=\"HIDDEN\" NAME=\"oldcontents\" VALUE=\"".addslashes($contents)."\">\n" );
-      echo( "<TEXTAREA CLASS=\"wiki_edit\" NAME=\"contents\"\" WRAP=\"OFF\">".$contents."</TEXTAREA>\n" );	
+			echo( "<FORM ACTION=\"".$_SERVER['PHP_SELF']."?page=".$title."\" METHOD=\"post\">\n" );
+      echo( "<TEXTAREA NAME=\"contents\"\" WRAP=\"OFF\">".$contents."</TEXTAREA>\n" );	
       break;
    }    	
 }
@@ -650,9 +495,9 @@ function displayPage( $title, &$mode, $contents="" )
 function displayControls( $title, &$mode )
 {
 	global $config;
-  echo("\t<TABLE CLASS=\"wiki_bottom\" WIDTH=100%>\n");
+  echo("\t<TABLE WIDTH=\"100%\">\n");
   echo("\t\t<TR>\n");
-  echo("\t\t\t<TD CLASS=\"wiki_controls\">\n");
+  echo("\t\t\t<TD>\n");
 	switch ($mode)
   {
   	case "display":
@@ -661,335 +506,28 @@ function displayControls( $title, &$mode )
 	    	echo( "\t\t\t\t<BR>\n" );
         echo( "\t\t\t\t<FORM ACTION=\"".$_SERVER['PHP_SELF']."?page=".$title."\" METHOD=\"post\">\n" );
         echo( "\t\t\t\t\t<INPUT TYPE=\"HIDDEN\" NAME=\"mode\" VALUE=\"edit\">\n" );
-        echo( "\t\t\t\t\t".$config['BUTTONPREFIX']."<INPUT CLASS=\"wiki_btn\" VALUE=\"Edit\" TYPE=\"SUBMIT\">".$config['BUTTONSUFFIX']."" );
+        echo( "\t\t\t\t\t<INPUT VALUE=\"Edit\" TYPE=\"SUBMIT\">" );
         echo( "\t\t\t\t</FORM>\n" );
       }
       break;
     case "edit":
     	echo( "\t\t\t\t<BR>\n" );
-      echo( "\t\t\t\t\t".$config['BUTTONPREFIX']."<INPUT CLASS=\"wiki_btn\" NAME=\"mode\" VALUE=\"save\" TYPE=\"SUBMIT\">".$config['BUTTONSUFFIX']."\n" );
-      echo( "\t\t\t\t\t".$config['BUTTONPREFIX']."<INPUT CLASS=\"wiki_btn\" NAME=\"mode\" VALUE=\"cancel\" TYPE=\"SUBMIT\">".$config['BUTTONSUFFIX']."" );
+      echo( "\t\t\t\t\t<INPUT NAME=\"mode\" VALUE=\"save\" TYPE=\"SUBMIT\">\n" );
+      echo( "\t\t\t\t\t<INPUT NAME=\"mode\" VALUE=\"cancel\" TYPE=\"SUBMIT\">\n" );
       echo( "\t\t\t\t</FORM>\n" );
       break;
     case "editnew":
     	echo( "\t\t\t\t<BR>\n" );
-      echo( "\t\t\t\t".$config['BUTTONPREFIX']."<INPUT CLASS=\"wiki_btn\" NAME=\"mode\" VALUE=\"save\" TYPE=\"SUBMIT\">".$config['BUTTONSUFFIX']."" );
+      echo( "\t\t\t\t<INPUT NAME=\"mode\" VALUE=\"save\" TYPE=\"SUBMIT\">" );
       echo( "\t\t\t\t</FORM>\n" );
   		break;
   }
 	echo("\t\t\t</TD>\n");
-  echo("\t\t\t<TD ALIGN=\"right\" CLASS=\"wiki_license\">\n");
+  echo("\t\t\t<TD ALIGN=\"right\">\n");
   license();
   echo("\t\t\t</TD>\n");
   echo("\t\t</TR>\n");
   echo("\t</TABLE>\n");
-}
-
-/*	
-  The PawfalikiDiff class is based upon Nils Knappmeier's GPL'd
-  "Implementation of a GNU diff alike function from scratch"
-  and is Copyright (C)2003, Nils Knappmeier <nk@knappi.org>
-  http://www.pmwiki.org/wiki/Cookbook/PHPDiffEngine  
-*/
-class PawfalikiDiff 
-{
-	function splitWithNL($text) 
-	{
-	  $array = split("\n", $text);
-	  for ($i=0; $i<count($array); $i++) 
-  	  if ($array[$i][count($array[$i])-1]!="\n")
-			  $array[$i]=$array[$i]."\n";
-	  if ($array[count($array)-1]=="\n") 
-		  array_pop($array);
-    else 
-		  $array[count($array)-1]=$array[count($array)-1];
-	  return $array;
-  }
-
-  function nextOccurence($line, &$r_array, $where) 
-  {
-	  $tmp = $r_array[$line];
-	  if (!$tmp) return FALSE;
-	  foreach($tmp as $nr) 
-		{
-		  if ($where<=$nr) 
-		  {
-			  $where = $nr;
-			  return $nr;
-		  }
-    }
-	  return FALSE;
-  }
-
-  function dist($a,$b) 
-  {
-	  $d1=$b[1]-$a[1];
-	  $d2=$b[2]-$a[2];
-	  return $d2+$d1;
-  }
-
-  function diff($text1, $text2) 
-  {
-    $array1 = $this->splitWithNL($text1);
-    $array2 = $this->splitWithNL($text2);
-    foreach($array1 as $nr => $line) 
-    {
-		  $r_array1[$line][] = $nr;
-    }
-    foreach($array2 as $nr => $line) 
-    {
-		  $r_array2[$line][] = $nr;
-    }
-    $result="";
-
-    $a[1]=0;  /* counter for array1 */
-    $a[2]=0;  /* counter for array2 */
-    $actions=Array();
-    while($a[1]<sizeof($array1) && $a[2]<sizeof($array2)) 
-    {
-		  if ($array1[$a[1]]==$array2[$a[2]]) 
-      {
-	      $a[1]++;
-	      $a[2]++;
-	      $actions[]=copy;
-		  } 
-      else 
-      {
-	  	  $best[1]=count($array1);
-	      $best[2]=count($array2);
-	      $scan=$a;
-	      while( $this->dist( $a, $scan )<$this->dist( $a, $best ) ) 
-        {
-				  $tmp[1]=$this->nextOccurence( $array2[$scan[2]], $r_array1, $scan[1] );
-				  $tmp[2]=$scan[2];
-				  if ( $tmp[1] && $this->dist( $a, $tmp ) < $this->dist( $a,$best ) ) 
-        	  $best=$tmp; 	    
-				  $tmp[1]=$scan[1];
-				  $tmp[2]=$this->nextOccurence( $array1[$scan[1]], $r_array2, $scan[2] );
-				  if ( $tmp[2] && $this->dist( $a, $tmp ) < $this->dist( $a,$best ) ) 
-        	  $best=$tmp; 
-				  $scan[1]++;
-				  $scan[2]++;
-	      }
-
-	      for($i=$a[1]; $i<$best[1]; $i++) 
-        {
-				  $actions[]=del;
-	      }
-	      for($i=$a[2]; $i<$best[2]; $i++) 
-        {
-				  $actions[]=add;
-	      }	
-	      $a=$best;
-		  }	       
-    }
-    for( $i=$a[1]; $i<sizeof($array1); $i++ ) 
-    {
-		  $actions[]=del;
-    }   
-    for( $i=$a[2]; $i<sizeof($array2); $i++ ) 
-    {
-		  $actions[]=add;
-    }
-    $actions[]=finish;
-    $x=$xold=0;
-    $y=$yold=0;
-    $realAction=""; /* the current action */
-
-    foreach( $actions as $action ) 
-    {
-		  if ($action==del) 
-      {
-	      if ($realAction=="" || $realAction=="d") 
-        {
-				  $realAction="d";
-	      } 
-        else 
-        {
-				  $realAction="c";
-	      }
-	      $x++;
-		  }
-		  if ($action==add) 
-      {
-	      if ($realAction=="" || $realAction=="a") 
-        {
-				  $realAction="a";
-	      } 
-        else 
-        {
-				  $realAction="c";
-	      }
-	      $y++;
-		  }
-		  if ($action==copy || $action==finish) 
-      {     
-	  	  if ($xold+1 == $x) 
-        {
-				  $xstr=$x;
-	      } 
-        else 
-        {
-				  $xstr=($xold+1).",$x";
-	      }
-	      if ($yold+1 == $y) 
-        {
-				  $ystr=$y;
-	      } 
-        else 
-        {
-				  $ystr=($yold+1).",$y";
-	      }
-
-	      if ($realAction=="a") 
-        {
-				  $result.= ($x)."a$ystr\n";
-				  for($i=$yold; $i<$y;$i++) 
-          {
-			      $result.= "> ".$array2[$i];
-				  }
-	      } 
-        else if ($realAction=="d") 
-        {
-				  $result.= ($xstr)."d".($y)."\n";
-				  for($i=$xold; $i<$x;$i++) 
-          {
-			      $result.= "< ".$array1[$i];
-				  }
-	      }
-        else if ($realAction=="c") 
-        {
-				  $result.= "$xstr$realAction$ystr\n";
-				  for($i=$xold; $i<$x;$i++) 
-          {
-			      $result.= "< ".$array1[$i];
-				  }
-				  $result.= "---\n";
-				  for($i=$yold; $i<$y;$i++) 
-				  {
-			      $result.= "> ".$array2[$i];
-				  }
-	      }
-	      $x++; $y++;
-	      $realAction="";
-	      $xold=$x;
-	      $yold=$y;
-		  }
-	  }
-    return $result;
-  }
-  
-  function array_cut_head( &$arr, $prefix )
-  {
-  	foreach( $arr as $a )
-    {
-    	$this->cut_head( $a, 0, $prefix );
-    }
-  }
-
-  function cut_head(&$str, $key, $prefix) 
-  {
-	  if (strpos($str,$prefix)===0) 
-    {
-		  $str =  substr($str,strlen($prefix));
-    } 
-    else 
-    {
-		  print "Something is wrong in the patch: ";
-		  print "'$str' should begin with '$prefix'\n";
-		  exit;
-    }
-  }
-
-  function txt_patch($text, $patch) 
-  {	
-	  $array=$this->splitWithNL($text);
-    if ($patch=="") 
-  	  return $text;
-    if ( substr($patch, -1)=="\n" ) 
-  	  $patch = substr($patch, 0, strlen($patch)-1);
-
-    $patch_array=split("\n", $patch);
-
-    for ( $i=0; $i<count($patch_array); $i++ ) 
-    {
-		  $patch_array[$i]=$patch_array[$i]."\n";
-    }
-
-    $i=0;
-    $nlIndex=array_search("\\ No newline at end of file\n", $patch_array);
-    while ( $nlIndex!=false && $i<2 ) 
-    { 
-		  /* This shouldn't be happening more than two times in a valid patch */
-		  $newEntry=$patch_array[$nlIndex-1].$patch_array[$nlIndex];
-		  array_splice($patch_array, $nlIndex-1, 2, $newEntry);
-		  $nlIndex=array_search("\\ No newline at end of file\n", $patch_array);
-		  $i++;
-    }
-
-    /* Start computing */
-    $current=0;
-    do 
-    {
-		  if ( preg_match("/^([\d,]+)([adc])([\d,]+)$/", $patch_array[$current],$matches)==0 ) 
-      {
-	      print "<pre>Error in line $current: ".$patch_array[$current]." not a command\n".sizeof($patch_array); 
-	      print "</pre>";
-	      exit;
-		  }
-		  list($full, $left, $action, $right) = $matches;
-
-		  /* Compute start and end of each side */
-		  list($left_start, $left_end)=split(",",$left);
-		  list($right_start, $right_end)=split(",",$right);
-		  if ($left_end=="") 
-      { 
-    	  $left_end = $left_start; 
-      }
-		  if ($right_end=="") 
-      { 
-    	  $right_end = $right_start; 
-      }	
-
-      /* Perform action and switch to next patch */
-		  if ($action=="a") 
-      {
-	      $replace=array_slice($patch_array, $current+1, $right_end-$right_start+1);	    
-	      $this->array_cut_head($replace, '> ');
-	      array_splice($array, $right_start-1, 0, $replace);
-	      $current+=$right_end-$right_start+2;
-		  } 
-      else if ($action=="d") 
-      {
-	  	  /* Check whether lines in patch are like in file */
-	      $should=array_slice($patch_array, $current+1, $left_end-$left_start+1);
-	      $this->array_cut_head($should, '< ');
-	      $is=array_splice($array, $right_start, $left_end-$left_start+1);
-	      $current+=$left_end-$left_start+2;
-		  } 
-      else if ($action=="c") 
-      {
-	  	  $replace=array_slice($patch_array,
-		    $current+1+$left_end-$left_start+2,
-		    $right_end-$right_start+1);
-	      $this->array_cut_head($replace, '> ');
-	      $is = array_splice($array, $right_start-1, $left_end-$left_start+1, $replace);
-
-	      /* Check whether lines in patch are like in text */
-	      $should=array_slice($patch_array, $current+1, $left_end-$left_start+1);
-	      $this->array_cut_head($should, '< ');
-	      $current+=1+$left_end-$left_start+1+1+$right_end-$right_start+1;
-		  }
-	  } while ( $current<count($patch_array) );
-
-    $result = implode("", $array);
-    $suffix="\n\\ No newline at end of file\n";
-    if (substr($result,-strlen($suffix))==$suffix) 
-    {
-		  $result=substr($result,0,strlen($result)-strlen($suffix));
-    }
-    return $result;
-  }
 }
 
 //==============
@@ -1020,7 +558,7 @@ else
 htmlstartblock();
 if ( $contents!="" )
 {
-	echo("<PRE CLASS=\"wiki_body\" WIDTH=\"100%\">\n");
+	echo("<PRE WIDTH=\"100\">\n");
 	echo( wikiparse( $contents ) );
 	echo( "</PRE>\n");
 }

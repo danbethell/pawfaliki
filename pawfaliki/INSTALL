@@ -1,10 +1,20 @@
-Requirements:
+_Requirements_
 	A working install of php.
 
-Installation:
+_Installation_
 1. Copy the pawfaliki.php file onto you webserver.
 2. Create a directory under the path where pawfaliki.php is located and call it Pages.
 3. Chmod Pages so that php can write to it.
 
-Problems:
+_Customisation_
+Edit the lines in the config section (very near the top of the file) as you require:
+$config['TITLE'] is the name of the wiki as it will appear in the titlebar.
+$config['HOMEPAGE'] allows an alternative name for the wiki homepage.
+$config['ADMIN'] admin contact as it will appear in error messages.
+$config['CSS'] (optional) add a css style sheet in the format TITLE:FILEPATH
+$config['LOCKED'][**pagename**] (optional) lock **pagename** so it can't be edited
+
+An example css file is included called pawfaliki.css which you can use to make your wiki look like pawfal - great! Also, feel free to edit the license() function (found just after the config section) to fit you requirements.
+
+_Problems_
 pawfaliki-users@lists.sourceforge.net
