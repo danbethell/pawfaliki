@@ -273,7 +273,13 @@ function externallink( $text )
 	if ($size>1)
 		$desc = $results[1];
 	else
-		$desc = $src;		
+		$desc = $src;				
+    
+  $patterns = "/{{([^{]*)}}/";
+	$replacements = "\".image( \"$1\" ).\"";	
+  $cmd = (" \$desc = \"".preg_replace( $patterns, $replacements, $desc )."\";");
+	eval($cmd);
+  
 	$resultstr = "<A HREF=\"".$src."\">".$desc."</A>";		
 	return verbatim( $resultstr );
 }
@@ -293,15 +299,11 @@ function colouredtext( $text )
 
 // place an image
 function image( $text )
-{
+{	
 	$results = explode( "|", $text );
 	$size=count($results);	
 	$src="";
 	$desc="";
-	$h="";
-	$w="";
-	$al="";
-	$val="";	
 	if ($size>=1)
 		$src = " SRC=\"".$results[0]."\"";
 	if ($size>=2)
@@ -310,7 +312,7 @@ function image( $text )
 		$desc = " ALT=\"[img]\"";
 	$resultstr="";
 	if ($size>0)
-		$resultstr = "<IMG".$src.$desc.">";		
+		$resultstr = "<IMG".$src." STYLE=\"border:0pt none\"".$desc.">";		
 	return verbatim( $resultstr );
 }
 
