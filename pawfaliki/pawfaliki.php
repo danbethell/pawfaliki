@@ -29,58 +29,19 @@ $config['ALINK'] = "green";
 
 $config['VERBATIM'] = array();
 
-function latestVersion( $title )
-{  
-	$results = array();
-	
-	if ($dh = opendir(pageDir( $title )))
-	{
-  	while (($file = readdir($dh)) !== false) 
-  	{
-  		if (preg_match( "/".$title."_v*/", $filename ) )
-  			$results[count($results)] = $file;
-    }
-    closedir($dh);
-  }
-   
-//	$results = glob( pageDir( $title ).$title."_v*" );
-	$num=0;
-	for ($i=0; $i<count($results); $i++)
-	{
-		$r = $results[$i];
-		$strings = explode( "_", $r );
-		$laststring = substr( $strings[count($strings)-1], 1 );
-		if ( is_numeric( $laststring ) )
-		{
-			if ( $laststring>$num )
-				$num = $laststring;
-		}
-	}
-	return $num;
-}
+$config['SPECIALPAGES'] = array();
+$config['SPECIALPAGES']['PageList'] = 1;
 
 function writeFile( $title, $contents )
 {
-	if ( !file_exists( pageDir( $title ) ) )
-	{
-	//	mkdir( pageDir( $title ), 0777 );
-	//	chmod( pageDir( $title ), 0777 );
-	}
-	$latest = latestVersion( $title );
-	$new = $latest+1;
-	$fd = fopen( pagePath( $title, $new ), "w" );
+	$fd = fopen( pagePath( $title ), "w" );
 	fwrite( $fd, $contents );
 	fclose( $fd );	
-	//if (file_exists( pagePath( $title ) ) )
-	//	unlink( pagePath( $title ) );
-	//symlink( pagePath( $title, $new ), pagePath( $title ) );
 }
 
 function initWiki( $title )
 {
 	$dir = (dirname($_SERVER['SCRIPT_FILENAME'])."/Pages");
-	if (!file_exists( $dir ) )
-		mkdir( $dir, 0755 );
 	$contents = "Hello and welcome to Pawfaliki!";	
 	writeFile( $title, $contents );
 }
@@ -137,7 +98,7 @@ function htmlheader( $title, $config )
   	echo(" LINK=\"".$config['LINK']."\" ");
   	echo(" VLINK=\"".$config['VLINK']."\" ");
   	echo(" ALINK=\"".$config['ALINK']."\" ");
-  	echo(">\n\t\t<PRE><TABLE WIDTH=\"100%\" BORDER=\"0\"><TR><TD ALIGN=\"LEFT\"><H1>".$title."</H1></TD><TD ALIGN=\"RIGHT\">".wikilink( "HomePage" )."</TD></TR></TABLE></PRE>\n");
+  	echo(">\n\t\t<PRE><TABLE WIDTH=\"100%\" BORDER=\"0\"><TR><TD ALIGN=\"LEFT\"><H1>".$title."</H1></TD><TD ALIGN=\"RIGHT\">".wikiparse( "HomePage PageList" )."</TD></TR></TABLE></PRE>\n");
 }
 
 function htmlfooter()
@@ -255,46 +216,41 @@ function verbatim( $contents )
 
 function wikiparse( $contents )
 {
-	// Pawfaliki handles:
-  //	bold - **this is bold**
-  //	italic - ''this is italic''
-  //	underlined - __this is underlined__
-  // 	links - specified by WikiWords only!
-  // 	extenal links - [[http://tikiwiki.org/]] - note no changing description using |!
-  //	non parsed text - ~~~ this is non-parsed ~~~ - NOT IMPLEMENTED YET!
-  //	images - {{src|desc|height|width|align|valign}}
-  //  special chars - ~169~ - NOT IMPLEMENTED YET!
-  //  unicode special chars - ~U:450373~ - NOT IMPLEMENTED YET!
-	
 	$contents = htmlspecialchars($contents);
 		
 	// verbatim text
 	$patterns[0] = "/~~~(.*)~~~/";
 	$replacements[0] = "\".verbatim( \"$1\" ).\"";	
+
 	// external links
 	$patterns[1] = "/\[\[([^\[]*)\]\]/";
 	$replacements[1] = "\".externallink( \"$1\" ).\"";		
+
 	// images
 	$patterns[2] = "/{{([^{]*)}}/";
 	$replacements[2] = "\".image( \"$1\" ).\"";	
+
 	// coloured text
 	$patterns[3] = "/~~#([^~]*)~~/";
 	$replacements[3] = "\".colouredtext( \"$1\" ).\"";	
 
-	// substitue complex expressions
+	// substitute complex expressions
 	$cmd = (" \$contents = \"".preg_replace( $patterns, $replacements, $contents )."\";");
 	eval($cmd);	
-	
-				
+					
 	// bold
 	$patterns[0] = "/\*\*(.*)\*\*/";
 	$replacements[0] = "<B>$1</B>";
+	
 	// italic
 	$patterns[1] = "/''(.*)''/";
 	$replacements[1] = "<I>$1</I>";
+	
 	// underline
 	$patterns[2] = "/__(.*)__/";
 	$replacements[2] = "<U>$1</U>";	
+	
+	// wiki words
 	$patterns[3] = "/([A-Z][a-z0-9]+[A-Z][A-Za-z0-9]+)/";
 	$replacements[3] = "\".wikilink( \"$1\" ).\"";	
 	
@@ -308,43 +264,76 @@ function wikiparse( $contents )
   return $contents;
 }
 
-function pageDir( $title )
+function pageDir( $title="" )
 {
-	//return (dirname($_SERVER['SCRIPT_FILENAME'])."/Pages/".$title."/");
 	return (dirname($_SERVER['SCRIPT_FILENAME'])."/Pages/");
 }
 
-function pagePath( $title, $version="LATEST" )
+function pagePath( $title )
 {
-	$version="LATEST";
-	return (pageDir($title).$title);//."_v".$version);
+	return (pageDir($title).$title);
+}
+
+function isSpecial( $title )
+{
+	global $config;
+	return ( isset( $config['SPECIALPAGES'][$title] ) );
 }
 
 function pageExists( $title )
 {
-	if (file_exists( pagePath( $title ) ) )
+	if (file_exists( pagePath( $title ) ) || isSpecial( $title ) )
 		return true;
 	else
 		return false;
 }
 
+function pageList()
+{
+	$contents = "";
+	$files = glob(pageDir()."*");
+	$details = array();
+	foreach ($files as $file)
+		$details[$file] = filemtime( $file );
+	arsort($details);
+	reset($details);
+	while ( list($key, $val) = each($details) )
+  	$contents .= basename($key)." (".date("D M j G:i:s T Y", $val ).")\n";
+	return $contents;
+}
+
 function displayPage( $title, &$mode )
 { 	
 	$contents = "";
-	if ( pageExists( $title ) )
-	{
-		// get contents of a file into a string
-		$filename = pagePath( $title );
-		$handle = fopen($filename, "r");
-		$contents = fread($handle, filesize($filename));
-		fclose($handle);
 	
-//		$contents = file_get_contents( pagePath( $title ) );
-	}
-	else
+	// handle special pages 
+	// note - EVERY page included in config['SPECIALPAGES'] must be handled!
+	switch ($title)
 	{
-		$contents = "This is the page for ".$title."!";
-		$mode = "editnew";
+		case "PageList":
+			$contents = pageList();
+			break;
+			
+		default:
+			if ( pageExists( $title ) )
+			{
+				// get contents of a file into a string
+				$contents = file_get_contents( pagePath( $title ) );
+		
+				// need to use this code if php version < 4.3.0
+				/*
+					$filename = pagePath( $title );
+					$handle = fopen($filename, "r");
+					$contents = fread($handle, filesize($filename));
+					fclose($handle);
+				*/	
+			}
+			else
+			{
+				$contents = "This is the page for ".$title."!";
+				$mode = "editnew";
+			}
+			break;
 	}
 	
 	switch ($mode)
@@ -363,7 +352,8 @@ function displayControls( $title, &$mode )
 	switch ($mode)
   {
   	case "display":
-    	htmlprint( "<BR><FORM ACTION=\"".$_SERVER['PHP_SELF']."?page=".$title."\" METHOD=\"post\"><INPUT TYPE=\"HIDDEN\" NAME=\"mode\" VALUE=\"edit\"><INPUT VALUE=\"Edit\" TYPE=\"SUBMIT\"></FORM>" );
+ 			if (!isSpecial($title))
+	    	htmlprint( "<BR><FORM ACTION=\"".$_SERVER['PHP_SELF']."?page=".$title."\" METHOD=\"post\"><INPUT TYPE=\"HIDDEN\" NAME=\"mode\" VALUE=\"edit\"><INPUT VALUE=\"Edit\" TYPE=\"SUBMIT\"></FORM>" );
       break;
     case "edit":
     	htmlprint( "<BR><INPUT NAME=\"mode\" VALUE=\"save\" TYPE=\"SUBMIT\"> <INPUT NAME=\"mode\" VALUE=\"cancel\" TYPE=\"SUBMIT\"></FORM>" );
