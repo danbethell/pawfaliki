@@ -26,6 +26,7 @@ $config['TEXT'] = "white";
 $config['LINK'] = "lime";
 $config['VLINK'] = "lime";
 $config['ALINK'] = "green";
+$config['WORDWRAP'] = 96;
 
 $config['VERBATIM'] = array();
 
@@ -89,10 +90,15 @@ function updateWiki( &$mode, $title, $config )
 function htmlheader( $title, $config )
 {
 	if ($title=="HomePage") $title = $config["HOMEPAGE"];
+	echo("<!DOCTYPE HTML PUBLIC \"-//W3C//DTD HTML 3.2 Final//EN\">");
+	echo("<HTML>\n\t<HEAD>\n\t\t");
+	echo("<META HTTP-EQUIV=\"Content-Type\" CONTENT=\"text/html; charset=ISO-8859-1\">\n\t\t");	
+	echo("<TITLE>");
 	if ($config['TITLE']==$title)
-		echo("<HTML>\n\t<HEAD>\n\t\t<TITLE>".$config["TITLE"]."</TITLE>\n\t</HEAD>\n\t");
+		echo($config["TITLE"]);
 	else
-		echo("<HTML>\n\t<HEAD>\n\t\t<TITLE>".$config["TITLE"]." :: ".$title."</TITLE>\n\t</HEAD>\n\t");
+		echo($config["TITLE"]." :: ".$title);
+	echo("</TITLE>\n\t</HEAD>\n\t");
 	echo("<BODY BGCOLOR=\"".$config['BGCOLOR']."\"");
 	echo(" TEXT=\"".$config['TEXT']."\" ");
   	echo(" LINK=\"".$config['LINK']."\" ");
@@ -108,7 +114,8 @@ function htmlfooter()
 
 function htmlstartblock()
 {
-	echo("\n<PRE>\n");
+	global $config;
+	echo("\n<PRE WIDTH=\"".$config['WORDWRAP']."\">\n");
 }
 
 function htmlprint( $string )
@@ -161,7 +168,9 @@ function colouredtext( $text )
 	
 	$colour=$results[0];
 	$contents=$results[1];
-		
+	$tokens = array_slice( $results, 1);
+	$contents = implode(":", $tokens);
+			
 	$resultstr = "<FONT COLOR=\"#".$colour."\">".$contents."</FONT>";
 	return verbatim( $resultstr );
 }
@@ -216,8 +225,9 @@ function verbatim( $contents )
 
 function wikiparse( $contents )
 {
-	$contents = htmlspecialchars($contents);
-		
+	global $config;
+	$contents = htmlspecialchars($contents, ENT_COMPAT, "ISO8859-1");
+			
 	// verbatim text
 	$patterns[0] = "/~~~(.*)~~~/";
 	$replacements[0] = "\".verbatim( \"$1\" ).\"";	
@@ -233,7 +243,7 @@ function wikiparse( $contents )
 	// coloured text
 	$patterns[3] = "/~~#([^~]*)~~/";
 	$replacements[3] = "\".colouredtext( \"$1\" ).\"";	
-
+	
 	// substitute complex expressions
 	$cmd = (" \$contents = \"".preg_replace( $patterns, $replacements, $contents )."\";");
 	eval($cmd);	
@@ -261,6 +271,7 @@ function wikiparse( $contents )
 	$cmd = (" \$contents = \"".$contents."\";");
 	eval($cmd);		
 	
+	//$contents = wordwrap( $contents, $config['WORDWRAP'] );	
   return $contents;
 }
 
@@ -304,6 +315,7 @@ function pageList()
 
 function displayPage( $title, &$mode )
 { 	
+	global $config;
 	$contents = "";
 	
 	// handle special pages 
@@ -342,7 +354,7 @@ function displayPage( $title, &$mode )
 			htmlprint( wikiparse( $contents ) );
       break;
     case "edit": case "editnew":
-			htmlprint( "<FORM ACTION=\"".$_SERVER['PHP_SELF']."?page=".$title."\" METHOD=\"post\"><TEXTAREA NAME=\"contents\" ROWS=15 COLS=80>".$contents."</TEXTAREA>" );	
+			htmlprint( "<FORM ACTION=\"".$_SERVER['PHP_SELF']."?page=".$title."\" METHOD=\"post\"><TEXTAREA NAME=\"contents\" ROWS=32 COLS=".$config['WORDWRAP'].">".$contents."</TEXTAREA>" );	
       break;
    }    	
 }
