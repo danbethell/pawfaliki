@@ -1,0 +1,10 @@
+Requirements:
+	A working install of php.
+
+Installation:
+1. Copy the pawfaliki.php file onto you webserver.
+2. Create a directory under the path where pawfaliki.php is located and call it Pages.
+3. Chmod Pages so that php can write to it.
+
+Problems:
+pawfaliki-users@lists.sourceforge.net
