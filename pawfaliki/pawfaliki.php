@@ -306,17 +306,11 @@ function image( $text )
 		$src = " SRC=\"".$results[0]."\"";
 	if ($size>=2)
 		$desc = " ALT=\"".$results[1]."\"";
-	if ($size>=3)
-		$h = " HEIGHT=\"".$results[2]."\"";
-	if ($size>=4)
-		$w = " WIDTH=\"".$results[3]."\"";
-	if ($size>=5)
-		$al = " ALIGN=\"".$results[4]."\"";
-	if ($size>=6)
-		$val=" VALIGN=\"".$results[5]."\"";		
+  else
+		$desc = " ALT=\"[img]\"";
 	$resultstr="";
 	if ($size>0)
-		$resultstr = "<IMG".$src.$desc.$h.$w.$al.$val.">";		
+		$resultstr = "<IMG".$src.$desc.">";		
 	return verbatim( $resultstr );
 }
 
@@ -543,7 +537,7 @@ function displayControls( $title, &$mode )
   }
 	echo("\t\t\t</TD>\n");
   echo("\t\t\t<TD ALIGN=\"right\">\n");
-  echo("\t\t\t\t<P>\n");
+  echo("\t\t\t\t<P STYLE=\"margin: 0px;\">\n");
   license();
   echo("\t\t\t\t</P>\n");
   echo("\t\t\t</TD>\n");
