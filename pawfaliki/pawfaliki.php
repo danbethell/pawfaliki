@@ -191,6 +191,20 @@ function externallink( $text )
 	return verbatim( $resultstr );
 }
 
+function colouredtext( $text )
+{
+	$results = explode( ":", $text );
+	$size=count($results);
+	if ($size==0||$size!=2)
+		return $text;	
+	
+	$colour=$results[0];
+	$contents=$results[1];
+		
+	$resultstr = "<FONT COLOR=\"#".$colour."\">".$contents."</FONT>";
+	return verbatim( $resultstr );
+}
+
 function image( $text )
 {
 	$results = explode( "|", $text );
@@ -252,19 +266,25 @@ function wikiparse( $contents )
   //  special chars - ~169~ - NOT IMPLEMENTED YET!
   //  unicode special chars - ~U:450373~ - NOT IMPLEMENTED YET!
 	
+	$contents = htmlspecialchars($contents);
+		
 	// verbatim text
 	$patterns[0] = "/~~~(.*)~~~/";
 	$replacements[0] = "\".verbatim( \"$1\" ).\"";	
 	// external links
-	$patterns[1] = "/\[\[(.*)\]\]/";
+	$patterns[1] = "/\[\[([^\[]*)\]\]/";
 	$replacements[1] = "\".externallink( \"$1\" ).\"";		
 	// images
-	$patterns[2] = "/{{(.*)}}/";
+	$patterns[2] = "/{{([^{]*)}}/";
 	$replacements[2] = "\".image( \"$1\" ).\"";	
-	
+	// coloured text
+	$patterns[3] = "/~~#([^~]*)~~/";
+	$replacements[3] = "\".colouredtext( \"$1\" ).\"";	
+
 	// substitue complex expressions
 	$cmd = (" \$contents = \"".preg_replace( $patterns, $replacements, $contents )."\";");
 	eval($cmd);	
+	
 				
 	// bold
 	$patterns[0] = "/\*\*(.*)\*\*/";
