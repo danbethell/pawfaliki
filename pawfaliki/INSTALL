@@ -13,6 +13,7 @@ $config['HOMEPAGE'] allows an alternative name for the wiki homepage.
 $config['ADMIN'] admin contact as it will appear in error messages.
 $config['CSS'] (optional) add a css style sheet in the format TITLE:FILEPATH
 $config['LOCKED'][**pagename**] (optional) lock **pagename** so it can't be edited
+$config['BLOCKED_IPS'][] (optional) fill this array with ip addresses you want to block (can accept wildcards)
 
 An example css file is included called pawfaliki.css which you can use to make your wiki look like pawfal - great! Also, feel free to edit the license() function (found just after the config section) to fit you requirements.
 
