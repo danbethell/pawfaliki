@@ -239,15 +239,15 @@ function wikiparse( $contents )
 	eval($cmd);	
 					
 	// bold
-	$patterns[0] = "/\*\*(.*)\*\*/";
+	$patterns[0] = "/\*\*([^\*]*[^\*]*)\*\*/";
 	$replacements[0] = "<B>$1</B>";
 	
 	// italic
-	$patterns[1] = "/''(.*)''/";
+	$patterns[1] = "/''([^']*[^']*)''/";
 	$replacements[1] = "<I>$1</I>";
 	
 	// underline
-	$patterns[2] = "/__(.*)__/";
+	$patterns[2] = "/__([^_]*[^_]*)__/";
 	$replacements[2] = "<U>$1</U>";	
 	
 	// wiki words
