@@ -31,14 +31,14 @@ $config['SPECIAL']['PageList'] = 1;
 //===========================================================================
 // CONFIG:
 // This section contains variables to configure various aspects of the wiki
-$config['TITLE'] = "Pawfaliki"; // Call the wiki
-$config['HOMEPAGE'] = "Pawfaliki"; // Call the homepage
-$config['ADMIN'] = "webmaster at here dot there"; // printed on error messages
+$config['TITLE'] = "Pawfal"; // Call the wiki
+$config['HOMEPAGE'] = "Pawfal"; // Call the homepage
+$config['ADMIN'] = "webmaster at pawfal dot org"; // printed on error messages
+$config['CSS'] = "Pawfal:pawfal.css"; // title:filename
+$config['LOCKED']['HomePage'] = 1; // lock the homepage
+$config['LOCKED']['PawfalIki'] = 1;
 /*
-	$config['CSS'] = "Pawfaliki:pawfaliki.css"; // title:filename
-*/
-/*
-	$config['LOCKED']['HomePage'] = 1; // lock the homepage
+$config['BLOCKED_IPS'][] = "192.168.0.*"; // block this ip address (can take wildcards)
 */
 //===========================================================================
 //===========================================================================
@@ -177,8 +177,11 @@ function updateWiki( &$mode, $title, $config )
     	$oldcontents = stripslashes( $_POST['oldcontents'] );
     	$contents = stripslashes( $_POST['contents'] );
       
-      // write file      
-      writeFile( $title, $contents );
+      // write file    
+			if (!isIpBlocked())
+  		{  
+      	writeFile( $title, $contents );
+      }
     }
 		$mode = "display";
 	}
@@ -193,8 +196,8 @@ function updateWiki( &$mode, $title, $config )
 function htmlheader( $title, $config )
 {
 	if ($title=="HomePage") 
-  	$title = $config["HOMEPAGE"];    
-	echo("<!DOCTYPE HTML PUBLIC \"-//W3C//DTD HTML 4.01 Transitional//EN\" \"http://www.w3.org/TR/html4/loose.dtd\">\n");
+  	$title = $config["HOMEPAGE"];  
+  echo("<!DOCTYPE HTML PUBLIC \"-//W3C//DTD HTML 4.01//EN\" \"http://www.w3.org/TR/html4/strict.dtd\">\n");
 	echo("<HTML>\n");
   echo("<HEAD>\n");
 	echo("\t<META HTTP-EQUIV=\"Content-Type\" CONTENT=\"text/html; charset=ISO-8859-1\">\n");
@@ -229,24 +232,33 @@ function htmlfooter()
 // the start of our wiki body
 function htmlstartblock()
 {
+  echo("\t<HR>\n");
+  echo("\t<TABLE WIDTH=\"100%\" CLASS=\"wiki_body_container\">\n");
+  echo("\t\t<TR>\n");
+  echo("\t\t\t<TD>\n");
 	echo("\n<!-- PAGE BODY -->\n");
-  echo("<HR>\n");
 }
 
 // the end of our wiki body
 function htmlendblock()
 {
-  echo("<HR>\n");
 	echo("<!-- END OF PAGE BODY -->\n\n");
+  echo("\t\t\t</TD>\n");
+  echo("\t\t</TR>\n");
+  echo("\t</TABLE>\n");
+  echo("<HR>\n");
 }
 
 // link to another wiki page
 function wikilink( $title )
 {
+	global $config;
 	if ( pageExists( $title ) )
 		return ("<A HREF=\"".$_SERVER['PHP_SELF']."?page=".$title."\">".$title."</A>");
-	else
+	elseif ( !isset($config['LOCKED']['ALL']) )
 		return ($title."<A HREF=\"".$_SERVER['PHP_SELF']."?page=".$title."\">?</A>");
+  else
+  	return ($title);
 }
 
 // link to an external web page
@@ -362,7 +374,7 @@ function wikiparse( $contents )
 	
 	// underline
 	$patterns[2] = "/__([^_]*[^_]*)__/";
-	$replacements[2] = "<U>$1</U>";	
+	$replacements[2] = "<SPAN STYLE=\\\"text-decoration: underline;\\\">$1</SPAN>";	
 	
 	// wiki words
 	$patterns[3] = "/([A-Z][a-z0-9]+[A-Z][A-Za-z0-9]+)/";
@@ -374,6 +386,10 @@ function wikiparse( $contents )
 	// final expansion
 	$cmd = (" \$contents = \"".$contents."\";");
 	eval($cmd);	
+  
+  $contents = str_replace( "\t", "&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;", $contents );
+  $contents = str_replace( "  ", "&nbsp;&nbsp;", $contents );
+  $contents = nl2br($contents);
   
   return $contents;
 }
@@ -401,7 +417,7 @@ function isSpecial( $title )
 function isLocked( $title )
 {
 	global $config;
-	return ( isset( $config['LOCKED'][$title] ) );
+	return ( isset( $config['LOCKED'][$title] )||isset( $config['LOCKED']['ALL'] ) );
 }
 
 function error( $string )
@@ -480,13 +496,13 @@ function displayPage( $title, &$mode, $contents="" )
 	switch ($mode)
   {
   	case "display":
-			echo("<PRE WIDTH=\"100\">\n");
+			echo("<SPAN CLASS=\"wiki_body\">\n");
 			echo( wikiparse( $contents ) );
-      echo("</PRE>\n");
+      echo("</SPAN>\n");
       break;
     case "edit": case "editnew":
 			echo( "<FORM ACTION=\"".$_SERVER['PHP_SELF']."?page=".$title."\" METHOD=\"post\">\n" );
-      echo( "<TEXTAREA NAME=\"contents\"\" WRAP=\"OFF\">".$contents."</TEXTAREA>\n" );	
+      echo( "<TEXTAREA NAME=\"contents\" COLS=\"80\" ROWS=\"24\">".$contents."</TEXTAREA>\n" );	
       break;
    }    	
 }
@@ -503,28 +519,33 @@ function displayControls( $title, &$mode )
   	case "display":
  			if (!(isSpecial($title)||isLocked($title)))
       {
-	    	echo( "\t\t\t\t<BR>\n" );
         echo( "\t\t\t\t<FORM ACTION=\"".$_SERVER['PHP_SELF']."?page=".$title."\" METHOD=\"post\">\n" );
-        echo( "\t\t\t\t\t<INPUT TYPE=\"HIDDEN\" NAME=\"mode\" VALUE=\"edit\">\n" );
-        echo( "\t\t\t\t\t<INPUT VALUE=\"Edit\" TYPE=\"SUBMIT\">" );
+        echo( "\t\t\t\t\t<P>\n" );
+        echo( "\t\t\t\t\t\t<INPUT TYPE=\"HIDDEN\" NAME=\"mode\" VALUE=\"edit\">\n" );
+        echo( "\t\t\t\t\t\t<INPUT VALUE=\"Edit\" TYPE=\"SUBMIT\">\n" );
+        echo( "\t\t\t\t\t</P>\n" );
         echo( "\t\t\t\t</FORM>\n" );
       }
       break;
     case "edit":
-    	echo( "\t\t\t\t<BR>\n" );
+      echo( "\t\t\t\t\t<P>\n" );
       echo( "\t\t\t\t\t<INPUT NAME=\"mode\" VALUE=\"save\" TYPE=\"SUBMIT\">\n" );
       echo( "\t\t\t\t\t<INPUT NAME=\"mode\" VALUE=\"cancel\" TYPE=\"SUBMIT\">\n" );
+      echo( "\t\t\t\t\t</P>\n" );
       echo( "\t\t\t\t</FORM>\n" );
       break;
     case "editnew":
-    	echo( "\t\t\t\t<BR>\n" );
-      echo( "\t\t\t\t<INPUT NAME=\"mode\" VALUE=\"save\" TYPE=\"SUBMIT\">" );
+      echo( "\t\t\t\t\t<P>\n" );
+      echo( "\t\t\t\t\t\t<INPUT NAME=\"mode\" VALUE=\"save\" TYPE=\"SUBMIT\">" );
+      echo( "\t\t\t\t\t</P>\n" );
       echo( "\t\t\t\t</FORM>\n" );
   		break;
   }
 	echo("\t\t\t</TD>\n");
   echo("\t\t\t<TD ALIGN=\"right\">\n");
+  echo("\t\t\t\t<P>\n");
   license();
+  echo("\t\t\t\t</P>\n");
   echo("\t\t\t</TD>\n");
   echo("\t\t</TR>\n");
   echo("\t</TABLE>\n");
@@ -558,9 +579,9 @@ else
 htmlstartblock();
 if ( $contents!="" )
 {
-	echo("<PRE WIDTH=\"100\">\n");
+	echo( "<SPAN CLASS=\"wiki_body\">\n");
 	echo( wikiparse( $contents ) );
-	echo( "</PRE>\n");
+	echo( "</SPAN>\n");
 }
 else
 	displayPage($title, $mode, $contents);
