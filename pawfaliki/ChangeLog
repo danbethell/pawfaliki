@@ -8,3 +8,8 @@
 * Everything should be transitional html4.0 compliant.
 * Added licensing information.
 * Added locking page support.
+
+== pawfaliki-0.3.0 (11/11/2004) ==
+* Rewritten parser maintains whitespace without having to use the <PRE> tag.
+* All pages are now html4.01 strict compliant.
+* Ip blocking now enabled. Even works with wildcards.
