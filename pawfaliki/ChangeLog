@@ -13,3 +13,15 @@
 * Rewritten parser maintains whitespace without having to use the <PRE> tag.
 * All pages are now html4.01 strict compliant.
 * Ip blocking now enabled. Even works with wildcards.
+
+== pawfaliki-0.4.0 (**/**/****) ==
+* Multiple license support.
+* Better error handling on writing pages.
+* Wiki syntax info block on edit page.
+* Specify wiki pages using [[]] tags.
+* Ability to disable auto-generated WikiLinks (disabled by default).
+* Restricted access support with password protection.
+* Support for targets in web links.
+* Use images in links.
+* New wiki syntax for page anchors.
+* Support for HTML in wiki pages (disabled by default).

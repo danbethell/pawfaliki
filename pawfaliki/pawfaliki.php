@@ -1,7 +1,8 @@
 <?php
 
 /*  Pawfaliki
- *  Copyright (C) 2004 Dan Bethell <dan at pawfal dot org>
+ *  Copyright (C) 2005 Dan Bethell <dan at pawfal dot org>
+ *                     Marc Vinyes <marc_contrib at ramonvinyes dot es>
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -20,31 +21,62 @@
 
 // setup some storage
 $config = array();
-$config['VERBATIM'] = array();
-$config['LOCKED'] = array();
-$config['BLOCKED_IPS'] = array();
-$config['ERRORS'] = array();
-$config['SPECIAL'] = array();
+$config['VERBATIM'] = array(); // used internally for verbatim text processing
+$config['ERRORS'] = array(); // used internally for error handling
+$config['SPECIAL'] = array(); // used for handling 'special' non-wiki pages
+$config['BLOCKED_IPS'] = array(); // an array of block IP addresses
+$config['LOCALE'] = array(); // text for titles, links etc...
+$config['USERS'] = array(); // uses and passwords
+$config['RESTRICTED'] = array(); // restricted page access
+$config['LICENSE'] = array(); // support for different licenses
+
+//==============
+//==============
+// CONFIGURE!
+//==============
+//==============
+
+// General configuration
+$config['TITLE'] = "My Wiki"; // Call the wiki
+$config['HOMEPAGE'] = "HomePage"; // Call the homepage
+$config['ADMIN'] = "webmaster at somewhere dot org"; // printed on error messages
+$config['CSS'] = "Pawfaliki:pawfaliki.css"; // title:filename
+$config['PAGES_DIRECTORY'] = "./Pages/"; // The paths of the stored wiki pages
+$config['DISABLE_AUTOLINKING'] = false; // Disables auto-generation of WikiLinks
+$config['ALLOW_HTMLCODE'] = false; // Allows posting of raw html using %% tags
+$config['SHOW_WIKISYNTAX'] = true; // display the wiki syntax box on edit page
+$config['EXTERNALLINKS_NEWWINDOW'] = false; // open external links in a new window
+
+// special pages - unmodifiable
 $config['SPECIAL']['PageList'] = 1;
 
-//===========================================================================
-//===========================================================================
-// CONFIG:
-// This section contains variables to configure various aspects of the wiki
-$config['TITLE'] = "Pawfal"; // Call the wiki
-$config['HOMEPAGE'] = "Pawfal"; // Call the homepage
-$config['ADMIN'] = "webmaster at pawfal dot org"; // printed on error messages
-$config['CSS'] = "Pawfal:pawfal.css"; // title:filename
-$config['LOCKED']['HomePage'] = 1; // lock the homepage
-$config['LOCKED']['PawfalIki'] = 1;
-/*
-$config['BLOCKED_IPS'][] = "192.168.0.*"; // block this ip address (can take wildcards)
-*/
+// user's passwords
+ $config['USERS']['admin'] = "adminpassword"; // changing this would be a good idea!
+// $config['USERS']['user1'] = "user1password";
+
+// give access to some users to edit restricted pages
+ $config['RESTRICTED']['HomePage'] = array("admin"); 
+// $config['RESTRICTED']['SomePage'] = array("admin", "user1"); 
+
+// pages with special licenses
+$config['LICENSE']['DEFAULT'] = "creative_commons_license"; // will call creative_commons_license() function
+//$config['LICENSE']['SomePage'] = "my_other_license"; // will call my_other_license() function
+
+// blocked IP addresses
+// $config['BLOCKED_IPS'][] = "192.168.0.*"; // block this ip address (can take wildcards)
+
+// text for some titles, icons, etc - you can use wiki syntax in these for images etc...
+$config['LOCALE']['EDIT_TITLE'] = "Edit: "; // title prefix for edit pages
+$config['LOCALE']['HOMEPAGE_LINK'] = "[[HomePage]]";
+$config['LOCALE']['PAGELIST_LINK'] = "[[PageList]]";
+$config['LOCALE']['REQ_PASSWORD'] = "(locked)";
+$config['LOCALE']['PASSWORD_TEXT'] = "Password:"; // wiki text
+
 //===========================================================================
 //===========================================================================
 
 // our licensing information
-function license()
+function creative_commons_license()
 {
 	?>
 			<!-- Creative Commons License -->
@@ -87,9 +119,19 @@ function css()
 // writes a file to disk
 function writeFile( $title, $contents )
 {
-	$fd = fopen( pagePath( $title ), "w" );
-	fwrite( $fd, $contents );
+	if (!$fd = @fopen( pagePath( $title ), "w" ))
+	{ 
+		error("Cannot open server's file for writing: ".pagePath( $title ));
+		return 1;
+	}
+	
+	if (@fwrite( $fd, $contents ) === FALSE)
+	{
+		error("Cannot write to server's file: ".pagePath( $title ));
+		return 2;
+	}
 	fclose( $fd );	
+	return 0;	
 }
 
 // reads the contents of a file into a string (php<4.3.0 friendly)
@@ -127,7 +169,7 @@ function read_dir($path)
 // init the wiki if no pages exist
 function initWiki( $title )
 {
-	$dir = (dirname($_SERVER['SCRIPT_FILENAME'])."/Pages");
+	global $config;
 	$contents = "Hello and welcome to Pawfaliki!";	
 	writeFile( $title, $contents );
 }
@@ -169,27 +211,44 @@ function getMode( $config )
 // update the wiki (someone clicked save)
 function updateWiki( &$mode, $title, $config )
 {
-	$result = "";
 	if ( $mode=="save" )
 	{
 		if ( isset($_POST['contents']) )
     {
-    	$oldcontents = stripslashes( $_POST['oldcontents'] );
     	$contents = stripslashes( $_POST['contents'] );
       
+			// restricted access
+			$restricted=false;
+			if (isLocked($title))
+			{
+				// check if the password is correct
+				$restricted=true;
+				foreach ($config['RESTRICTED'][$title] as $user)
+				{
+					if ($config['USERS'][$user]==$_POST['password']) 
+						$restricted=false;
+				}
+				if ($restricted)
+					error("Wrong password. Try again.");
+			}
+			
       // write file    
-			if (!isIpBlocked())
-  		{  
-      	writeFile( $title, $contents );
-      }
+			if (!isIpBlocked() && !$restricted)
+      	$error = writeFile( $title, $contents );
     }
 		$mode = "display";
+		
+		// go back if you can't write the data (avoid data loss)
+		if (($restricted) || ($error!=0) || isIPBlocked())
+		{
+			$mode="edit";
+		}
 	}
 	if ($mode=="cancel")
 	{
 		$mode = "display";
 	}
-  return $result;
+  return $contents;
 }
 
 // generate our html header
@@ -213,12 +272,12 @@ function htmlheader( $title, $config )
 
 	// any errors?
 	foreach ($config['ERRORS'] as $err)
-		echo( "<P CLASS=\"error\">".$err."</P>" );
+		echo( "<P CLASS=\"error\">ERROR: ".$err."</P>" );
 
   echo("\t<TABLE WIDTH=\"100%\">\n");
   echo("\t\t<TR>\n");
   echo("\t\t\t<TD ALIGN=\"left\"><SPAN CLASS=\"wiki_header\">".$title."</SPAN></TD>\n");
-  echo("\t\t\t<TD ALIGN=\"right\">".wikiparse( "HomePage PageList" )."</TD>\n");
+  echo("\t\t\t<TD ALIGN=\"right\">".wikiparse( $config['LOCALE']['HOMEPAGE_LINK']." ".$config['LOCALE']['PAGELIST_LINK'] )."</TD>\n");
   echo("\t\t</TR>\n");
   echo("\t</TABLE>\n");
 }
@@ -255,32 +314,65 @@ function wikilink( $title )
 	global $config;
 	if ( pageExists( $title ) )
 		return ("<A HREF=\"".$_SERVER['PHP_SELF']."?page=".$title."\">".$title."</A>");
-	elseif ( !isset($config['LOCKED']['ALL']) )
+	elseif ( !$config['DISABLE_AUTOLINKING'] )
 		return ($title."<A HREF=\"".$_SERVER['PHP_SELF']."?page=".$title."\">?</A>");
   else
   	return ($title);
 }
 
-// link to an external web page
-function externallink( $text )
+// link to another web page
+function webpagelink( $text )
 {
+	global $config;
 	$results = explode( "|", $text );
 	$size=count($results);
 	if ($size==0)
 		return $text;		
+		
+	// page link
 	$src=$results[0];
+	
+	// link text
 	$desc="";
 	if ($size>1)
 		$desc = $results[1];
 	else
-		$desc = $src;				
-    
+		$desc = $src;	
+  // is our text an image?
   $patterns = "/{{([^{]*)}}/";
 	$replacements = "\".image( \"$1\" ).\"";	
   $cmd = (" \$desc = \"".preg_replace( $patterns, $replacements, $desc )."\";");
-	eval($cmd);
-  
-	$resultstr = "<A HREF=\"".$src."\">".$desc."</A>";		
+	eval($cmd);			
+	
+	// link target	
+	$window="";                
+	if ($size>2)
+		$window = $results[2];
+	else
+		if ( $config['EXTERNALLINKS_NEWWINDOW'] )
+			$window = "_blank";
+		else
+			$window = "_self";
+		
+	// see whether it is a Wiki Link or not
+	$prefix = explode( "/", $src );
+	if ((count($prefix)==1))
+	{
+	  if (pageExists($src))
+		{
+			$src = $_SERVER['PHP_SELF']."?page=".$src;
+			$window = "_self";
+			$resultstr = "<A HREF=\"".$src."\" target=\"$window\">".$desc."</A>";
+		}
+		elseif (!$config['DISABLE_AUTOLINKING'])
+		{
+			$resultstr = ($src."<A HREF=\"".$_SERVER['PHP_SELF']."?page=".$src."\" target=\"$window\">?</A>");
+		}
+		else
+			$resultstr = $desc;
+	}
+	else      
+		$resultstr = "<A HREF=\"".$src."\" target=\"$window\">".$desc."</A>";			
 	return verbatim( $resultstr );
 }
 
@@ -304,15 +396,25 @@ function image( $text )
 	$size=count($results);	
 	$src="";
 	$desc="";
+	$align="";
+	$valign="";
 	if ($size>=1)
 		$src = " SRC=\"".$results[0]."\"";
 	if ($size>=2)
 		$desc = " ALT=\"".$results[1]."\"";
   else
 		$desc = " ALT=\"[img]\"";
+	if ($size>=3)
+		$desc .= " WIDTH=\"".$results[2]."\"";
+	if ($size>=4)
+		$desc .= " HEIGHT=\"".$results[3]."\"";
+	if ($size>=5)
+		$align = "align:".$results[4].";";
+	if ($size>=6)
+		$valign=" vertical-align:".$results[5].";";	
 	$resultstr="";
 	if ($size>0)
-		$resultstr = "<IMG".$src." STYLE=\"border:0pt none\"".$desc.">";		
+		$resultstr = "<IMG".$src." STYLE=\"border:0pt none;".$width.$height.$align.$valign."\"".$desc.">";
 	return verbatim( $resultstr );
 }
 
@@ -334,6 +436,15 @@ function verbatim( $contents )
 	return "\".getVerbatim(".$index.").\"";
 }
 
+function htmltag( $contents )
+{
+	// ' must be used for fields
+	$result = str_replace ("&lt;", "<", $contents);
+	$result = str_replace ("&gt;", ">", $result);
+	$result = str_replace ("&quot;", "\\\"", $result);
+	return $result;
+}
+
 // parse wiki code & replace with html
 function wikiparse( $contents )
 {
@@ -344,9 +455,9 @@ function wikiparse( $contents )
 	$patterns[0] = "/~~~(.*)~~~/";
 	$replacements[0] = "\".verbatim( \"$1\" ).\"";	
 
-	// external links
+	// webpage links
 	$patterns[1] = "/\[\[([^\[]*)\]\]/";
-	$replacements[1] = "\".externallink( \"$1\" ).\"";		
+	$replacements[1] = "\".webpagelink( \"$1\" ).\"";		
 
 	// images
 	$patterns[2] = "/{{([^{]*)}}/";
@@ -355,6 +466,12 @@ function wikiparse( $contents )
 	// coloured text
 	$patterns[3] = "/~~#([^~]*)~~/";
 	$replacements[3] = "\".colouredtext( \"$1\" ).\"";	
+	
+	if ( $config['ALLOW_HTMLCODE'] )
+	{
+		$patterns[4] = "/%%(.*)%%/";
+		$replacements[4] = "\".htmltag( \"$1\" ).\"";		
+	}
 	
 	// substitute complex expressions
 	$cmd = (" \$contents = \"".preg_replace( $patterns, $replacements, $contents )."\";");
@@ -372,10 +489,17 @@ function wikiparse( $contents )
 	$patterns[2] = "/__([^_]*[^_]*)__/";
 	$replacements[2] = "<SPAN STYLE=\\\"text-decoration: underline;\\\">$1</SPAN>";	
 	
-	// wiki words
-	$patterns[3] = "/([A-Z][a-z0-9]+[A-Z][A-Za-z0-9]+)/";
-	$replacements[3] = "\".wikilink( \"$1\" ).\"";	
+	// html shortcuts
+	$patterns[3] = "/@@([^@]*)@@/";
+	$replacements[3] = "<A NAME=\\\"$1\\\"></A>";
 	
+	// wiki words	
+	if ( !$config['DISABLE_AUTOLINKING'] )
+	{
+		$patterns[4] = "/([A-Z][a-z0-9]+[A-Z][A-Za-z0-9]+)/";
+		$replacements[4] = "\".wikilink( \"$1\" ).\"";	
+	}
+
 	// substitute simple expressions
 	$contents = preg_replace( $patterns, $replacements, $contents );		
 
@@ -393,7 +517,8 @@ function wikiparse( $contents )
 // returns the directory where the wiki pages are stored
 function pageDir()
 {
-	return (dirname($_SERVER['SCRIPT_FILENAME'])."/Pages/");
+	global $config;
+	return ($config['PAGES_DIRECTORY']);
 }
 
 // returns the full path to a page
@@ -413,9 +538,20 @@ function isSpecial( $title )
 function isLocked( $title )
 {
 	global $config;
-	return ( isset( $config['LOCKED'][$title] )||isset( $config['LOCKED']['ALL'] ) );
+	return ( isset( $config['RESTRICTED'][$title] ) );
 }
 
+// print the appropriate license
+function printLicense( $title )
+{
+	global $config;
+	$license_func = $config['LICENSE']['DEFAULT'];
+	if ( isset( $config['LICENSE'][$title] ))
+		$license_func = $config['LICENSE'][$title];
+	eval( $license_func."();" );
+}
+
+// add an error to our buffer
 function error( $string )
 {
 	global $config;
@@ -459,9 +595,53 @@ function pageList()
 		$details[$file] = filemtime( $file );
 	arsort($details);
 	reset($details);
-	while ( list($key, $val) = each($details) )
-  	$contents .= basename($key)." (".date("D M j G:i:s T Y", $val ).")\n";
+	while ( list($key, $val) = each($details) )  	
+		$contents .= "[[".basename($key)."]] (".date("D M j G:i:s T Y", $val ).")\n";
 	return $contents;
+}
+
+// print a little wiki syntax box
+function printWikiSyntax()
+{
+	global $config;
+  echo("\t<TABLE CLASS=\"wikisyntax\">\n");
+  echo("\t\t<TR>\n");
+  echo("\t\t\t<TD COLSPAN=3>");
+	echo( wikiparse("**__Syntax__** ~~#0000FF:(optional values)~~\n") );
+	echo("\t\t\t</TD>\n");
+	echo("\t\t</TR>\n");
+  echo("\t\t<TR>\n");
+  echo("\t\t\t<TD ALIGN=\"right\">");
+	echo( "bold text: <BR>" );
+	echo( "italic text: <BR>" );
+	echo( "underlined text: <BR>" );
+	echo( "verbatim text: <BR>" );
+	echo( "web link: <BR>" );
+	if ( !$config['DISABLE_AUTOLINKING'] )
+		echo( "wiki link: <BR>" );
+	echo( "image: <BR>" );
+	echo( "hex-coloured text: <BR>" );
+	if ( $config['ALLOW_HTMLCODE'] )
+		echo( "html code: <BR>" );
+	echo( "anchor link: <BR>" );
+	echo("\t\t\t</TD>\n");
+  echo("\t\t\t<TD>");
+	echo( "**abc**<BR>" );
+	echo( "''abc''<BR>" );
+	echo( "__abc__<BR>" );
+	echo( "~~~abc~~~<BR>" );
+	echo( "[[url|".wikiparse("~~#0000FF:description~~")."|".wikiparse("~~#0000FF:target~~")."]]<BR>" );
+	if ( !$config['DISABLE_AUTOLINKING'] )
+		echo( "SomePage<BR>" );
+	echo( "{{url|".wikiparse("~~#0000FF:alt~~")."|".wikiparse("~~#0000FF:width~~")."|".wikiparse("~~#0000FF:height~~") );
+	echo( "|".wikiparse("~~#0000FF:align~~")."|".wikiparse("~~#0000FF:vertical-align~~")."]]<BR>" );
+	echo( "~~#AAAAAA:grey~~<BR>" );
+	if ( $config['ALLOW_HTMLCODE'] )
+		echo( "%%html code%%<BR>" );
+	echo( "@@name@@<BR>" );
+	echo("\t\t\t</TD>\n");
+	echo("\t\t</TR>\n");
+  echo("\t</TABLE>\n");
 }
 
 // display a wiki page
@@ -479,7 +659,8 @@ function displayPage( $title, &$mode, $contents="" )
 		default:
 			if ( pageExists( $title ) )
 			{
-				$contents = read_file( pagePath( $title ) );
+				if (!( ($mode=="edit") && ($contents!="") ))
+					$contents = read_file( pagePath( $title ) );
 			}
 			else
 			{
@@ -509,22 +690,28 @@ function displayControls( $title, &$mode )
 	global $config;
   echo("\t<TABLE WIDTH=\"100%\">\n");
   echo("\t\t<TR>\n");
-  echo("\t\t\t<TD>\n");
+  echo("\t\t\t<TD ALIGN=\"left\">\n");
 	switch ($mode)
   {
   	case "display":
- 			if (!(isSpecial($title)||isLocked($title)))
+ 			if (!(isSpecial($title)))
       {
         echo( "\t\t\t\t<FORM ACTION=\"".$_SERVER['PHP_SELF']."?page=".$title."\" METHOD=\"post\">\n" );
         echo( "\t\t\t\t\t<P>\n" );
-        echo( "\t\t\t\t\t\t<INPUT TYPE=\"HIDDEN\" NAME=\"mode\" VALUE=\"edit\">\n" );
-        echo( "\t\t\t\t\t\t<INPUT VALUE=\"Edit\" TYPE=\"SUBMIT\">\n" );
-        echo( "\t\t\t\t\t</P>\n" );
+	      echo( "\t\t\t\t\t\t<INPUT NAME=\"mode\" VALUE=\"edit\" TYPE=\"SUBMIT\">" );
+				if (isLocked($title))
+	        echo( wikiparse($config['LOCALE']['REQ_PASSWORD']));				
+        echo( "\n\t\t\t\t\t</P>\n" );
         echo( "\t\t\t\t</FORM>\n" );
       }
       break;
     case "edit":
       echo( "\t\t\t\t\t<P>\n" );
+			if (isLocked($title))
+			{
+				echo(wikiparse($config['LOCALE']['PASSWORD_TEXT'])); 
+				echo("<input name=\"password\" type=\"password\" class=\"pass\" size=\"17\">");
+			}
       echo( "\t\t\t\t\t<INPUT NAME=\"mode\" VALUE=\"save\" TYPE=\"SUBMIT\">\n" );
       echo( "\t\t\t\t\t<INPUT NAME=\"mode\" VALUE=\"cancel\" TYPE=\"SUBMIT\">\n" );
       echo( "\t\t\t\t\t</P>\n" );
@@ -532,6 +719,11 @@ function displayControls( $title, &$mode )
       break;
     case "editnew":
       echo( "\t\t\t\t\t<P>\n" );
+			if (isLocked($title))
+			{
+				echo(wikiparse($config['LOCALE']['PASSWORD_TEXT'])); 
+				echo("<input name=\"password\" type=\"password\" class=\"pass\" size=\"17\">");
+			}
       echo( "\t\t\t\t\t\t<INPUT NAME=\"mode\" VALUE=\"save\" TYPE=\"SUBMIT\">" );
       echo( "\t\t\t\t\t</P>\n" );
       echo( "\t\t\t\t</FORM>\n" );
@@ -540,11 +732,13 @@ function displayControls( $title, &$mode )
 	echo("\t\t\t</TD>\n");
   echo("\t\t\t<TD ALIGN=\"right\">\n");
   echo("\t\t\t\t<P STYLE=\"margin: 0px;\">\n");
-  license();
+  printLicense( $title );
   echo("\t\t\t\t</P>\n");
   echo("\t\t\t</TD>\n");
   echo("\t\t</TR>\n");
   echo("\t</TABLE>\n");
+	if ( ($mode=="edit"||$mode=="editnew")&&$config['SHOW_WIKISYNTAX'] )
+		printWikiSyntax();
 }
 
 //==============
@@ -553,39 +747,37 @@ function displayControls( $title, &$mode )
 //==============
 //==============
 
-// stop the page from being cached
-header("Cache-Control: no-store, no-cache, must-revalidate");
-
-// find out what wiki 'mode' we're in
-$mode = getMode( $config );
-
-// get the page title
-$title = getTitle( $config );
-
-// get the page contents
-$contents = updateWiki( $mode, $title, $config );
-
-// page header
-if ($mode=="edit") 
-	htmlHeader("Edit: ".$title, $config); 
-else
-	htmlHeader($title, $config); 
-  
-// page contents
-htmlstartblock();
-if ( $contents!="" )
+// by defining $LIBFUNCTIONSONLY and including this file we can use all
+// the wiki functions without actually displaying a wiki.
+if (!isset($LIBFUNCTIONSONLY))
 {
-	echo( "<SPAN CLASS=\"wiki_body\">\n");
-	echo( wikiparse( $contents ) );
-	echo( "</SPAN>\n");
-}
-else
+	// stop the page from being cached
+	header("Cache-Control: no-store, no-cache, must-revalidate");
+
+	// find out what wiki 'mode' we're in
+	$mode = getMode( $config );
+
+	// get the page title
+	$title = getTitle( $config );
+
+	// get the page contents
+	$contents = updateWiki( $mode, $title, $config );
+
+	// page header
+	if ($mode=="edit") 
+		htmlHeader(wikiparse($config['LOCALE']['EDIT_TITLE']).$title, $config); 
+	else
+		htmlHeader($title, $config); 
+
+	// page contents
+	htmlstartblock();
 	displayPage($title, $mode, $contents);
-htmlendblock();
+	htmlendblock();
 
-// page controls
-displayControls($title, $mode);
+	// page controls
+	displayControls($title, $mode);
 
-// page footer
-htmlFooter();
+	// page footer
+	htmlFooter();
+}
 ?>

@@ -31,6 +31,23 @@ table.wiki_body_container
   padding-right: 2px;
 }
 
+/* wiki syntax */
+table.wikisyntax
+{
+	border-style: solid;
+	border-width: 1px;
+	width: 100%;
+	border-color: #666666;
+}
+
+/* password entry */
+input.pass
+{
+	border-width: 0.5px;
+	border-style: solid;
+	border-color: white;
+}
+
 /* page contents */
 span.wiki_body
 {	
