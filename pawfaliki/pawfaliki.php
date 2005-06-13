@@ -21,7 +21,7 @@
 
 // setup some global storage
 $config = array();
-$config['PAWFALIKI_VERSION'] = "0.4.0"; // Pawfaliki version
+$config['PAWFALIKI_VERSION'] = "0.4.5"; // Pawfaliki version
 $config['GENERAL'] = array();
 $config['SYNTAX'] = array();
 $config['BACKUP'] = array();
@@ -53,6 +53,8 @@ $config['GENERAL']['CSS'] = "Pawfaliki:pawfaliki.css"; // CSS file (title:filena
 $config['GENERAL']['PAGES_DIRECTORY'] = "./PawfalikiPages/"; // Path to stored wiki pages
 $config['GENERAL']['TEMP_DIRECTORY'] = "./PawfalikiTemp/"; // Path to temporary directory for backups
 $config['GENERAL']['MODTIME_FORMAT'] = "(D M j G:i:s T Y)"; // date() compatible format string for the pagelist
+$config['GENERAL']['SHOW_CONTROLS'] = true; // show all the wiki controls - edit, save, PageList etc...
+$config['GENERAL']['DEBUG'] = true; // display debug information
 
 // SYNTAX: Wiki editing syntax
 $config['SYNTAX']['SHOW_BOX'] = true; // Display the wiki syntax box on edit page
@@ -83,12 +85,15 @@ $config['USERS']['admin'] = "adminpassword"; // changing this would be a good id
 // RESTRICTED: give access to some users to edit restricted pages
 $config['RESTRICTED']['RestoreWiki'] = array("admin"); // only admin can restore wiki pages
 //$config['RESTRICTED']['HomePage'] = array("admin"); // lock the homepage - admin only
+//$config['USERS']['group1'] = "group1password"; // create a new user password
+//$config['RESTRICTED']['Group1Page'] = array("admin","group1"); // restrict this page to the listed users
 
 // IP BLOCKING: blocked IP addresses
 // $config['BLOCKED_IPS'][] = "192.168.0.*"; // block this ip address (can take wildcards)
 
 // MISC: Misc stuff
 $config['MISC']['EXTERNALLINKS_NEWWINDOW'] = false; // Open external links in a new window
+$config['MISC']['REQ_PASSWORD_TEXT_IN_EDIT_BTN'] = false; // Include the req password text in the edit button
 
 // LOCALE: text for some titles, icons, etc - you can use wiki syntax in these for images etc...
 $config['LOCALE']['EDIT_TITLE'] = "Edit: "; // title prefix for edit pages
@@ -116,29 +121,29 @@ $config['LICENSE']['RestoreWiki'] = "noLicense"; // will call noLicense() functi
 // our licensing information
 function creativeCommonsLicense()
 {
-	?>
-			<!-- Creative Commons License -->
-			This work is licensed under a <a rel="license" href="http://creativecommons.org/licenses/by-sa/2.0/">Creative Commons License</a>.
-			<!-- /Creative Commons License -->
-			<!--
-			<rdf:RDF xmlns="http://web.resource.org/cc/"
-			    xmlns:dc="http://purl.org/dc/elements/1.1/"
-			    xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#">
-				<Work rdf:about="">
-				   <dc:type rdf:resource="http://purl.org/dc/dcmitype/Text" />
-				   <license rdf:resource="http://creativecommons.org/licenses/by-sa/2.0/" />
-				</Work>
-				<License rdf:about="http://creativecommons.org/licenses/by-sa/2.0/">
-				   <permits rdf:resource="http://web.resource.org/cc/Reproduction" />
-				   <permits rdf:resource="http://web.resource.org/cc/Distribution" />
-				   <requires rdf:resource="http://web.resource.org/cc/Notice" />
-				   <requires rdf:resource="http://web.resource.org/cc/Attribution" />
-				   <permits rdf:resource="http://web.resource.org/cc/DerivativeWorks" />
-				   <requires rdf:resource="http://web.resource.org/cc/ShareAlike" />
-				</License>
-			</rdf:RDF>
-			-->
-	<?php
+	echo("					<!-- Creative Commons License -->\n");
+	echo("					".wikiparse("This work is licensed under a [[http://creativecommons.org/licenses/by-sa/2.5/|Creative Commons License]]")."\n");
+	echo("					<!-- Creative Commons License -->\n");
+?>
+					<!--
+					<rdf:RDF xmlns="http://web.resource.org/cc/"
+					    xmlns:dc="http://purl.org/dc/elements/1.1/"
+					    xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#">
+						<Work rdf:about="">
+						   <dc:type rdf:resource="http://purl.org/dc/dcmitype/Text" />
+						   <license rdf:resource="http://creativecommons.org/licenses/by-sa/2.0/" />
+						</Work>
+						<License rdf:about="http://creativecommons.org/licenses/by-sa/2.0/">
+						   <permits rdf:resource="http://web.resource.org/cc/Reproduction" />
+						   <permits rdf:resource="http://web.resource.org/cc/Distribution" />
+						   <requires rdf:resource="http://web.resource.org/cc/Notice" />
+						   <requires rdf:resource="http://web.resource.org/cc/Attribution" />
+						   <permits rdf:resource="http://web.resource.org/cc/DerivativeWorks" />
+						   <requires rdf:resource="http://web.resource.org/cc/ShareAlike" />
+						</License>
+					</rdf:RDF>
+					-->
+<?php
 }
 
 // blank license()
@@ -390,7 +395,9 @@ function htmlHeader( $title, $config )
 	echo("\t<TABLE WIDTH=\"100%\">\n");
 	echo("\t\t<TR>\n");
 	echo("\t\t\t<TD ALIGN=\"left\"><SPAN CLASS=\"wiki_header\">".$title."</SPAN></TD>\n");
-	echo("\t\t\t<TD ALIGN=\"right\">".wikiparse( $config['LOCALE']['HOMEPAGE_LINK']." ".$config['LOCALE']['PAGELIST_LINK'] ) );
+	echo("\t\t\t<TD ALIGN=\"right\">");
+	if ($config['GENERAL']['SHOW_CONTROLS'])
+		echo(wikiparse( $config['LOCALE']['HOMEPAGE_LINK']." ".$config['LOCALE']['PAGELIST_LINK'] ) );
 	echo( "</TD>\n");
 	echo("\t\t</TR>\n");
 	echo("\t</TABLE>\n");
@@ -399,6 +406,25 @@ function htmlHeader( $title, $config )
 // generate our html footer
 function htmlFooter()
 {
+	global $config;
+	if ( $config['GENERAL']['DEBUG'] )
+	{		
+   		list($usec, $sec) = explode(" ", microtime());
+		$end_time = (float)$sec + (float)$usec;
+		$duration = $end_time - $config['GENERAL']['DEBUG_STARTTIME'];
+		$uptime = shell_exec("cut -d. -f1 /proc/uptime");
+		$load_ar = explode(" ", exec("cat /proc/loadavg"));
+		$load = $load_ar[2];
+		$days = floor($uptime/60/60/24);
+		$hours = $uptime/60/60%24;
+		$mins = $uptime/60%60;
+		$secs = $uptime%60;
+		
+		echo( "<HR><B><U>DEBUG</U></B><BR>" );
+		echo( wikiparse( "~~#FF0000:PAGE GENERATION:~~ $duration secs\n" ) );	
+		echo( wikiparse( "~~#FF0000:SERVER UPTIME:~~ $days day(s) $hours hour(s) $mins minute(s) and $secs second(s)\n" ) );
+		echo( wikiparse( "~~#FF0000:SERVER LOAD:~~ $load\n" ) );
+	}
 	echo("\t</BODY>\n</HTML>\n");
 }
 
@@ -419,7 +445,7 @@ function htmlEndBlock()
 	echo("\t\t\t</TD>\n");
 	echo("\t\t</TR>\n");
 	echo("\t</TABLE>\n");
-	echo("<HR>\n");
+	echo("\t<HR>\n");
 }
 
 // link to another wiki page
@@ -478,7 +504,7 @@ function webpagelink( $text )
 			$window = "_self";
 			$resultstr = "<A HREF=\"".$src."\" target=\"$window\">".$desc."</A>";
 		}
-		if ($src[0]=="#") // maybe its an anchor link
+		elseif ($src[0]=="#") // maybe its an anchor link
 		{
 			$window = "_self";
 			$resultstr = "<A HREF=\"".$src."\" target=\"$window\">".$desc."</A>";
@@ -580,6 +606,8 @@ function htmltag( $contents )
 function wikiparse( $contents )
 {
 	global $config;
+	$patterns = array();
+	$replacements = array();
 	$contents = htmlspecialchars($contents, ENT_COMPAT, "ISO8859-1");
 
 	// verbatim text
@@ -598,14 +626,19 @@ function wikiparse( $contents )
 	$patterns[3] = "/~~#([^~]*)~~/";
 	$replacements[3] = "\".colouredtext( \"$1\" ).\"";	
 	
+	$patterns[4] = '/\$/';
+	$replacements[4] = "&DOLLAR;";
+	
 	if ( $config['SYNTAX']['HTMLCODE'] )
 	{
-		$patterns[4] = "/%%(.*)%%/";
-		$replacements[4] = "\".htmltag( \"$1\" ).\"";		
+		$patterns[5] = "/%%(.*)%%/";
+		$replacements[5] = "\".htmltag( \"$1\" ).\"";		
 	}
 
 	// substitute complex expressions
 	$contents = wikiEval( preg_replace( $patterns, $replacements, $contents ) );
+	$patterns = array();
+	$replacements = array();
 
 	// bold
 	$patterns[0] = "/\*\*([^\*]*[^\*]*)\*\*/";
@@ -632,10 +665,17 @@ function wikiparse( $contents )
 
 	// substitute simple expressions & final expansion
 	$contents = wikiEval( preg_replace( $patterns, $replacements, $contents ) );
+	$patterns = array();
+	$replacements = array();
 
 	// replace some whitespace bits & bobs  
-	$contents = str_replace( "\t", "&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;", $contents );
-	$contents = str_replace( "  ", "&nbsp;&nbsp;", $contents );
+	$patterns[0] = "\t";
+	$replacements[0] = "&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;";
+	$patterns[1] = "  ";
+	$replacements[1] = "&nbsp;&nbsp;";
+	$patterns[2] = "&DOLLAR;";
+	$replacements[2] = "$";
+	$contents = str_replace( $patterns, $replacements, $contents );
 	$contents = nl2br($contents);
 
 	return $contents;
@@ -1134,81 +1174,97 @@ function displayControls( $title, &$mode )
 	global $config;
 	echo("\t<TABLE WIDTH=\"100%\">\n");
 	echo("\t\t<TR>\n");
-	echo("\t\t\t<TD ALIGN=\"left\">\n");
-	switch ($mode)
+	echo("\t\t\t<TD ALIGN=\"left\" valign=\"top\" height=\"40\">\n"); 
+	if ($config['GENERAL']['SHOW_CONTROLS'])
 	{
-		case "display":
-			if (!(isSpecial($title)))
-			{
-				echo( "\t\t\t\t<FORM ACTION=\"".$_SERVER['PHP_SELF']."?page=".$title."\" METHOD=\"post\">\n" );
-				echo( "\t\t\t\t\t<P>\n" );
-				echo( "\t\t\t\t\t\t<INPUT NAME=\"mode\" VALUE=\"edit\" TYPE=\"SUBMIT\">" );
-				if (isLocked($title))
-					echo( wikiparse($config['LOCALE']['REQ_PASSWORD']));				
-				echo( "\n\t\t\t\t\t</P>\n" );
-				echo( "\t\t\t\t</FORM>\n" );
-			}
-			if ($title=="PageList"&&$config['BACKUP']['ENABLE'])
-			{				
-				echo( wikiparse( " ".$config['LOCALE']['BACKUP_LINK']." ".$config['LOCALE']['RESTORE_LINK'] ) );
-			}
-			break;
-		case "backup":
-			if (!anyErrors())
-			{
-				$wikiname = str_replace( " ", "_", $config['GENERAL']['TITLE'] );
-				$files = pawfalikiReadDir(pageDir());
-				$backups = pawfalikiReadDir(tempDir());
-				$details = array();
-				foreach ($backups as $backup)
-					$details[$backup] = filemtime( $backup );
-				arsort($details);
-				reset($details);	
-				while ( list($key, $val) = each($details) )  	
+		switch ($mode)
+		{
+			case "display":
+				if (!(isSpecial($title)))
 				{
-					$size = filesize($key);
-					echo( wikiparse("[[$key|".basename($key)."]] ($size bytes)"));
+					echo( "\t\t\t\t<FORM ACTION=\"".$_SERVER['PHP_SELF']."?page=".$title."\" METHOD=\"post\">\n" );
+					echo( "\t\t\t\t\t<P>\n" );
+	
+					if( $config['MISC']['REQ_PASSWORD_TEXT_IN_EDIT_BTN'] )
+					{
+						echo( "<INPUT NAME=\"mode\" VALUE=\"edit\" TYPE=\"hidden\">");
+						echo( "\t\t\t\t\t\t<INPUT VALUE=\"edit " );
+						if (isLocked($title))
+							echo($config['LOCALE']['REQ_PASSWORD']);
+						echo( "\" TYPE=\"SUBMIT\">");
+					}
+					else
+					{
+						echo( "\t\t\t\t\t\t<INPUT NAME=\"mode\" VALUE=\"edit\" TYPE=\"SUBMIT\">" );
+						if (isLocked($title))
+							echo( wikiparse($config['LOCALE']['REQ_PASSWORD']));		
+					} 
+			
+					echo( "\n\t\t\t\t\t</P>\n" );
+					echo( "\t\t\t\t</FORM>\n" );
 				}
-			}
-			break;
-		case "restore":
-			if ( !isset($config['INTERNAL']['DATA']['RESTORED']) )
-			{
+				if ($title=="PageList"&&$config['BACKUP']['ENABLE'])
+				{				
+					echo( wikiparse( " ".$config['LOCALE']['BACKUP_LINK']." ".$config['LOCALE']['RESTORE_LINK'] ) );
+				}
+				break;
+			case "backup":
+				if (!anyErrors())
+				{
+					$wikiname = str_replace( " ", "_", $config['GENERAL']['TITLE'] );
+					$files = pawfalikiReadDir(pageDir());
+					$backups = pawfalikiReadDir(tempDir());
+					$details = array();
+					foreach ($backups as $backup)
+						$details[$backup] = filemtime( $backup );
+					arsort($details);
+					reset($details);	
+					while ( list($key, $val) = each($details) )  	
+					{
+						$size = filesize($key);
+						echo( wikiparse("[[$key|".basename($key)."]] ($size bytes)\n"));
+					}
+				}
+				break;
+			case "restore":
+				if ( !isset($config['INTERNAL']['DATA']['RESTORED']) )
+				{
+					echo( "\t\t\t\t\t<P>\n" );
+					echo(wikiparse(" ".$config['LOCALE']['PASSWORD_TEXT'])); 
+					echo("<input name=\"password\" type=\"password\" class=\"pass\" size=\"17\">");
+					echo( "\t\t\t\t\t<INPUT NAME=\"mode\" VALUE=\"restore\" TYPE=\"SUBMIT\">\n" );		
+					echo( "\t\t\t\t\t</P>\n" );
+					echo( "\t\t\t\t</FORM>\n" );
+				}
+				break;
+			case "edit":
 				echo( "\t\t\t\t\t<P>\n" );
-				echo(wikiparse(" ".$config['LOCALE']['PASSWORD_TEXT'])); 
-				echo("<input name=\"password\" type=\"password\" class=\"pass\" size=\"17\">");
-				echo( "\t\t\t\t\t<INPUT NAME=\"mode\" VALUE=\"restore\" TYPE=\"SUBMIT\">\n" );		
+				if (isLocked($title))
+				{
+					echo(wikiparse($config['LOCALE']['PASSWORD_TEXT'])); 
+					echo("<input name=\"password\" type=\"password\" class=\"pass\" size=\"17\">");
+				}
+				echo( "\t\t\t\t\t<INPUT NAME=\"mode\" VALUE=\"save\" TYPE=\"SUBMIT\">\n" );
+				echo( "\t\t\t\t\t<INPUT NAME=\"mode\" VALUE=\"cancel\" TYPE=\"SUBMIT\">\n" );
 				echo( "\t\t\t\t\t</P>\n" );
 				echo( "\t\t\t\t</FORM>\n" );
-			}
-			break;
-		case "edit":
-			echo( "\t\t\t\t\t<P>\n" );
-			if (isLocked($title))
-			{
-				echo(wikiparse($config['LOCALE']['PASSWORD_TEXT'])); 
-				echo("<input name=\"password\" type=\"password\" class=\"pass\" size=\"17\">");
-			}
-			echo( "\t\t\t\t\t<INPUT NAME=\"mode\" VALUE=\"save\" TYPE=\"SUBMIT\">\n" );
-			echo( "\t\t\t\t\t<INPUT NAME=\"mode\" VALUE=\"cancel\" TYPE=\"SUBMIT\">\n" );
-			echo( "\t\t\t\t\t</P>\n" );
-			echo( "\t\t\t\t</FORM>\n" );
-			break;
-		case "editnew":
-			echo( "\t\t\t\t\t<P>\n" );
-			if (isLocked($title))
-			{
-				echo(wikiparse($config['LOCALE']['PASSWORD_TEXT'])); 
-				echo("<input name=\"password\" type=\"password\" class=\"pass\" size=\"17\">");
-			}
-			echo( "\t\t\t\t\t\t<INPUT NAME=\"mode\" VALUE=\"save\" TYPE=\"SUBMIT\">" );
-			echo( "\t\t\t\t\t</P>\n" );
-			echo( "\t\t\t\t</FORM>\n" );
-			break;
+				break;
+			case "editnew":
+				echo( "\t\t\t\t\t<P>\n" );
+				if (isLocked($title))
+				{
+					echo(wikiparse($config['LOCALE']['PASSWORD_TEXT'])); 
+					echo("<input name=\"password\" type=\"password\" class=\"pass\" size=\"17\">");
+				}
+				echo( "\t\t\t\t\t\t<INPUT NAME=\"mode\" VALUE=\"save\" TYPE=\"SUBMIT\">" );
+				echo( "\t\t\t\t\t</P>\n" );
+				echo( "\t\t\t\t</FORM>\n" );
+				break;
+		}
 	}
 	echo("\t\t\t</TD>\n");
-	echo("\t\t\t<TD ALIGN=\"right\">\n");
-	echo("\t\t\t\t<P STYLE=\"margin: 0px;\">\n");
+	echo("\t\t\t<TD ALIGN=\"right\" valign=\"top\" height=\"40\">\n");
+	echo("\t\t\t\t<P>\n");
 	printLicense( $title );
 	echo("\t\t\t\t</P>\n");
 	echo("\t\t\t</TD>\n");
@@ -1228,6 +1284,12 @@ function displayControls( $title, &$mode )
 // the wiki functions without actually displaying a wiki.
 if (!isset($LIBFUNCTIONSONLY))
 {
+	if ($config['GENERAL']['DEBUG'])
+	{
+   		list($usec, $sec) = explode(" ", microtime());
+		$config['GENERAL']['DEBUG_STARTTIME'] = (float)$sec + (float)$usec;
+	}
+
 	// stop the page from being cached
 	header("Cache-Control: no-store, no-cache, must-revalidate");
 

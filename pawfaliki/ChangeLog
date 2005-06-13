@@ -34,3 +34,13 @@
 * Fixed some misc. bugs.
 * Tidied up the code.
 * Brand new README & INSTALL files.
+
+== pawfaliki-0.4.5 (14/06/2005) ==
+* Fixed a few typos.
+* Support for anchor links in current page [[#example]].
+* Ability to hide wiki controls.
+* Ability to enable 'debug mode'.
+* Cosmetic fixes for IE etc. (MarcVinyes)
+* Updated the example CSS file. (MarcVinyes)
+* Support for 'password required' text in the edit button. (MarcVinyes)
+* Wrote some documentation!
