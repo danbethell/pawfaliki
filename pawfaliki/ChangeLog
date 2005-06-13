@@ -14,14 +14,23 @@
 * All pages are now html4.01 strict compliant.
 * Ip blocking now enabled. Even works with wildcards.
 
-== pawfaliki-0.4.0 (**/**/****) ==
-* Multiple license support.
-* Better error handling on writing pages.
-* Wiki syntax info block on edit page.
-* Specify wiki pages using [[]] tags.
-* Ability to disable auto-generated WikiLinks (disabled by default).
-* Restricted access support with password protection.
-* Support for targets in web links.
-* Use images in links.
-* New wiki syntax for page anchors.
-* Support for HTML in wiki pages (disabled by default).
+== pawfaliki-0.4.0 (09/05/2005) ==
+* Backup & restore with zlib compression (if enabled).
+* Email page changes.
+* RSS feed of recently modified pages.
+* Restricted access support with password protection. (MarcVinyes)
+* Support for multiple licenses.
+* Syntax info block on edit page.
+* Support for using functions in other php scripts.
+* Specify wiki pages using [[]] tags. (MarcVinyes)
+* Ability to disable auto-generated WikiLinks. (MarcVinyes)
+* Ability to enable HTML in wiki pages. (MarcVinyes)
+* Better error handling. (MarcVinyes)
+* Support for targets in links. (MarcVinyes)
+* Support for images in link syntax.
+* Syntax for page anchors.
+* Misc. extra configuration options.
+* Very limited localised text support.
+* Fixed some misc. bugs.
+* Tidied up the code.
+* Brand new README & INSTALL files.
