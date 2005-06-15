@@ -1,0 +1,286 @@
+__**:: Contents ::**__
+* [[#install|Installation]]
+* [[#config|Configuration]]
+  - [[#general|General Configuration]]
+  - [[#syntax|Wiki Syntax]]
+  - [[#backup|Backup & Restore]]
+  - [[#rss|RSS Feed]]
+  - [[#email|Email Page Changes]]
+  - [[#users|User Passwords]]
+  - [[#restricted|Restricted Page Access]]
+  - [[#blockedips|Blocked IPs]]
+  - [[#locale|Locale]]
+  - [[#special|Special Pages]]
+  - [[#license|License Information]]
+  - [[#misc|Misc Stuff]]
+* [[#userguide|User Guide]]
+  - [[#usr_editing|Editing Pages]]
+  - [[#usr_syntax|Wiki Syntax]]
+  - [[#usr_backup|Backup & Restore]]
+  - [[#usr_rss|Using RSS]]
+* [[#techref|Technical Reference]]
+  - [[#pawfalikifunctions|Utilising Pawfaliki PHP Functions]]
+* [[#authors|Authors]]
+
+
+@@install@@__**:: Installation ::**__
+Pawfaliki requires a working installation of [[http://www.php.net|php]]. It has been tested with php-4.3.10 & php-5.0.2.
+
+1. Copy the ''pawfaliki.php'' file onto you webserver.
+
+2. Create a directory under the path where pawfaliki.php is located and call it something like ''~~~PawfalikiPages~~~''.
+
+3. Chmod this directory so that php can write to it - this is where all your wiki content will be stored.
+	 
+4. Create another directory under the path where pawfaliki.php is located and call it something like ''~~~PawfalikiTemp~~~''.
+
+5. Chmod this directory so that php can write to it - this is where temporary backup files will be stored. This directory will be regularly emptied of files by Pawfaliki so don't use it for storing anything else.
+
+6. Configure your ''pawfaliki.php'' file (see [[#config|Configuration]] section below).
+
+
+@@config@@__**:: Configuration ::**__
+
+The look of Pawfaliki can be configured using CSS. An example css file is included called ''pawfaliki.css'' which you can use to make your wiki look like [[http://www.pawfal.org|www.pawfal.org]] - great! 
+
+Very near the top of ''pawfaliki.php'' is the configuration section. This consists of a collection of variables stored in the ''$config'' array which you can edit as you require. A description of these variables can be found below.
+
+If you're overwriting a few of these settings it may be easier to put all your settings in an additional PHP file and specify it using the ''~~~$config['CONFIGFILE']~~~'' variable - see the exampleconfig.php file included with pawfaliki for an example.
+
+''~~~$config['CONFIGFILE']~~~''
+ - Filename for an additonal configuration file.
+ - This file gets sourced **after** the main config section.
+ - Useful for keeping all your site-specific settings when upgrading.
+ - Needs to be valid PHP - see pawfaliki.cfg for an example.
+ - By default set to "" (none).
+
+@@general@@__General Configuration__
+''~~~$config['GENERAL']['TITLE']~~~''
+- The title of the wiki.
+- By default set to "Pawfaliki".
+
+''~~~$config['GENERAL']['ADMIN']~~~''
+ - Site admin's email address .
+ - This is not used currently.
+
+''~~~$config['GENERAL']['CSS']~~~'' 
+ - The CSS file to use for your Pawfaliki.
+ - use an empty string for no CSS.
+ - Made up of a description and a filename seperated by a : (colon).
+ - By default set to "Pawfaliki:pawfaliki.css".
+
+''~~~$config['GENERAL']['PAGES_DIRECTORY']~~~'' 
+ - The path to your stored wiki content.
+ - ~~~By default set to "./PawfalikiPages/".~~~
+
+''~~~$config['GENERAL']['TEMP_DIRECTORY']~~~''
+ - The path to your Pawfaliki temporary directory. 
+ - ~~~By default set to "./PawfalikiTemp/".~~~
+
+''~~~$config['GENERAL']['MODTIME_FORMAT']~~~''
+ - A date() compatible format string.
+ - Used to display the modification times on the pagelist.
+ - By default set to "(D M j G:i:s T Y)".
+ 
+''~~~$config['GENERAL']['SHOW_CONTROLS']~~~''
+ - Show all the wiki controls - edit, save, ~~~PageList~~~ etc...
+ - By default set to true.
+ 
+''~~~$config['GENERAL']['DEBUG']~~~''
+ - Display debug information (pagegen time, uptime, load).
+ - By default set to false. 
+
+@@syntax@@__Wiki Syntax__
+''~~~$config['SYNTAX']['SHOW_BOX']~~~''
+ - Display the wiki syntax box on the edit page?
+ - By default set to true.
+ 
+''~~~$config['SYNTAX']['WIKIWORDS']~~~''
+ - Allow auto-generation of wiki links from ~~~WikiWords~~~.
+ - By default set to true.
+ 
+''~~~$config['SYNTAX']['AUTOCREATE']~~~''
+ - Display ? next to wiki pages that don't exist yet.
+ - By default set to true.
+ 
+''~~~$config['SYNTAX']['HTMLCODE']~~~''
+ - Allow posting of raw html code using the %% syntax.
+ - By default set to false.
+
+@@backup@@__Backup & Restore__
+''~~~$config['BACKUP']['ENABLE']~~~''
+ - Enable the backup & restore feature.
+ - By default set to true.
+
+''~~~$config['BACKUP']['USE_ZLIB']~~~''
+ - If the zlib module is available use it to produce backups.
+ - If the zlib module is available support uploading of gzipped backup files.
+ - By default set to true.
+ 
+''~~~$config['BACKUP']['MAX_SIZE']~~~''
+ - Sets the maximum size for an uploaded file (to restore from).
+ - By default set to 3000000 (~3MB).
+
+@@rss@@__RSS Feed__
+''~~~$config['RSS']['ENABLE']~~~''
+ - Enables generation of a RSS feed.
+ - Example feed: http://mywiki.example?format=rss.
+ - By default set to true.
+ 
+''~~~$config['RSS']['ITEMS']~~~''
+ - The number of pages to display in the RSS feed.
+ - Use -1 for all pages.
+ - By default set to 10.
+ 
+''~~~$config['RSS']['TITLE_MODTIME']~~~'' 
+ - Prints the file modification time in the RSS item title.
+ - By default set to false.
+
+''~~~$config['RSS']['MODTIME_FORMAT']~~~''
+ - A date() compatible format string.
+ - Used to display the modification times in the RSS feed.
+ - By default set to "(Y-m-d H:i:s T)".
+
+@@email@@__Email Page Changes__
+''~~~$config['EMAIL']['ENABLE']~~~''
+ - Enables the sending of an email upon every page change.
+ - By default set to false.
+ 
+''~~~$config['EMAIL']['CHANGES_TO']~~~''
+ - The email address to send the emails to.
+ 
+''~~~$config['EMAIL']['CHANGES_FROM']~~~''
+ - The email address to send the emails from.
+ 
+''~~~$config['EMAIL']['MODTIME_FORMAT']~~~''
+ - A date() compatible format string.
+ - Used to display the modification times in email subject.
+ - By default set to "Y-m-d H:i:s".
+
+''~~~$config['EMAIL']['SHOW_IP']~~~''
+ - Prints the IP address of the modifier in the email subject.
+ - Think twice about enabling this if you're emailing to a public list etc.
+
+@@users@@__User Passwords__
+''~~~$config['USERS']~~~''
+ - This is an array of users and their passwords.
+ - By default user 'admin' has the password 'adminpassword'.
+ - Changing the default password would be a good idea!
+
+@@restricted@@__Restricted Page Access__
+''~~~$config['RESTRICTED']~~~''
+ - This is an array of pages and the users that can edit them.
+ - By default ~~~RestoreWiki~~~ is restricted so only 'admin' can restore backups.
+
+@@blockedips@@__Blocked IPs__
+''~~~$config['BLOCKED_IPS']~~~''
+ - This is an array of IP addresses to block from editing the wiki.
+ - By default no IPs are blocked.
+
+@@locale@@__Locale__
+**NOTE:** You can use wiki syntax in these for images etc...
+''~~~$config['LOCALE']['EDIT_TITLE']~~~''
+ - A title prefix for when editing pages.
+ 
+''~~~$config['LOCALE']['HOMEPAGE_LINK']~~~''
+ - The ~~~HomePage~~~ link text
+
+''~~~$config['LOCALE']['PAGELIST_LINK']~~~''
+ - The ~~~PageList~~~ link text
+ 
+''~~~$config['LOCALE']['REQ_PASSWORD']~~~''
+ - Text to print next to the edit button on a restricted page.
+ 
+''~~~$config['LOCALE']['PASSWORD_TEXT']~~~''
+ - Text to print next to the password entry box on a restricted page edit.
+
+@@special@@__Special Pages__
+''~~~$config['SPECIAL']~~~''
+ - An array of 'special' pages which are unmodifiable.
+ - ~~~Some page *MUST* be in this array: PageList, BackupWiki, RestoreWiki.~~~
+
+@@license@@__License Information__
+''~~~$config['LICENSE']~~~''
+ - An array of function names which print license information.
+ - The default for pages is specified using the 'DEFAULT' element.
+ - ~~~By default 'DEFAULT' uses the creativeCommonsLicense() function.~~~
+ - ~~~By default 'PageList', 'BackupWiki', and 'RestoreWiki' use noLicense().~~~
+ 
+@@misc@@__Misc Stuff__
+''~~~$config['MISC']['EXTERNALLINKS_NEWWINDOW'] ~~~''
+ - Opens external links in a new window.
+ - By default set to false.
+ 
+''~~~$config['MISC']['REQ_PASSWORD_TEXT_IN_EDIT_BTN'] ~~~''
+ - Include the req password text in the edit button
+ - By default set to false.
+
+
+@@userguide@@__**:: User Guide ::**__
+
+@@usr_editing@@__Editing Pages__
+To edit a wiki page simply click the **edit** button at the bottom of the page. Be prepared to enter a valid password if access for that page has been restricted - look for **(locked)** or similar near the edit button.
+
+@@usr_syntax@@__Syntax__
+{{images/pawfalikidocs_syntax.png}}
+''Pawfaliki syntax.''
+
+@@usr_backup@@__Backup & Restore__
+If backup/restore is enabled for your wiki you can easily backup all the wiki pages to a single file and then restore them using that file at a later time.
+
+To backup the wiki click the **backup** link at the bottom of the **~~~PageList~~~** page. The wiki will backup all the pages to a temporary backup file on the remote server and provide a download link. Right-click the link and save the file to your local drive. The temporary file will remain on the remote server for at least 5 minutes, after that it will be removed the next time the wiki is refreshed.
+
+{{images/pawfalikidocs_backup1.png}}
+''Backup download link.''
+
+To restore the wiki click the **restore** link at the bottom of the **~~~PageList~~~** page. You will be provided with a file upload form and a password box. 
+
+{{images/pawfalikidocs_restore1.png}}
+''File upload & password box.''
+
+Select the backup file from your local drive and enter a valid password. Click **restore** to begin restoring your backed up wiki pages. When the process is complete (this may take a few moments depending on the speed of the remote server and how many pages you are restoring) you will be presented with a log of which pages were restored. 
+
+{{images/pawfalikidocs_restore2.png}}
+''Restore log.''
+
+Note that any existing pages that exist in the backup will be overwritten but pages that do not exist in the backup will remain unchanged.
+
+@@usr_rss@@__Using RSS__
+You can access the RSS feed for your wiki (if it's enabled - see the RSS section in [[#config|Configuration]]) by pointing your news aggregator to the wiki url followed by **?format=rss**.
+For example: [[http://www.pawfal.org/?format=rss]]
+
+
+@@techref@@__**:: Technical Reference ::**__
+
+@@pawfalikifunctions@@__Utilising Pawfaliki PHP Functions__
+Pawfaliki can be used as a wiki code parser instead of a full wiki-engine.
+
+Simply include the following code in your own PHP script:
+
+''<?php''
+''  $PAWFALIKI_FUNCTIONS_ONLY = 1;''
+''  require("pawfaliki.php");''
+''?>''
+
+You can then use the ''wikiParse()'' function which takes a string of wiki code and returns it as valid HTML:
+
+''<?php''
+''  ~~~$myWikiCode = "this is **bold** and this is ''italic''";~~~''
+''  ~~~$myHTML = wikiParse( $myWikiCode );~~~''
+''  echo( $myHTML );''
+''?>''
+
+
+@@authors@@__**:: Authors ::**__
+
+Dan Bethell
+    dan at pawfal dot org
+    [[http://www.pawfal.org]]
+		
+Marc Vinyes
+    marc_contrib at ramonvinyes dot es
+    [[http://litlnemo.redirectme.net]]
+		
+Thanks to:
+    [[http://www.pulsewidth.ca|PulseWidth]] for being user #1 and suggesting CSS.
+    [[http://www.pawfal.org/nebogeo|Dave Griffiths]] for coming up with ideas & breaking everything... twice.
