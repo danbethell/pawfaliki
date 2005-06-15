@@ -44,6 +44,7 @@ $config['INTERNAL']['DATA'] = array();
 // CONFIGURATION
 //================
 //================
+$config['CONFIGFILE'] = ""; // filename for an additonal configuration file
 
 // GENERAL: General configuration stuff
 $config['GENERAL']['TITLE'] = "Pawfaliki"; // Title of the wiki
@@ -54,11 +55,12 @@ $config['GENERAL']['PAGES_DIRECTORY'] = "./PawfalikiPages/"; // Path to stored w
 $config['GENERAL']['TEMP_DIRECTORY'] = "./PawfalikiTemp/"; // Path to temporary directory for backups
 $config['GENERAL']['MODTIME_FORMAT'] = "(D M j G:i:s T Y)"; // date() compatible format string for the pagelist
 $config['GENERAL']['SHOW_CONTROLS'] = true; // show all the wiki controls - edit, save, PageList etc...
-$config['GENERAL']['DEBUG'] = true; // display debug information
+$config['GENERAL']['DEBUG'] = false; // display debug information (pagegen time, uptime, load)
 
 // SYNTAX: Wiki editing syntax
 $config['SYNTAX']['SHOW_BOX'] = true; // Display the wiki syntax box on edit page
-$config['SYNTAX']['AUTOLINKING'] = true; // Auto-generation of WikiLinks
+$config['SYNTAX']['WIKIWORDS'] = true; // Auto-generation of links from WikiWords
+$config['SYNTAX']['AUTOCREATE'] = true; // Display ? next to wiki pages that don't exist yet.
 $config['SYNTAX']['HTMLCODE'] = false; // Allows raw html using %% tags
 
 // BACKUP: Backup & Restore settings
@@ -79,28 +81,22 @@ $config['EMAIL']['CHANGES_FROM'] = "pawfaliki-changes@nowhere.example"; // & whe
 $config['EMAIL']['MODTIME_FORMAT'] = "Y-m-d H:i:s"; // date() compatible format string for the pagelist
 $config['EMAIL']['SHOW_IP'] = false; // show the modifiers ip in the email subject
 
-// PASSWORDS: setup passwords
+// USERS: setup user passwords
 $config['USERS']['admin'] = "adminpassword"; // changing this would be a good idea!
+//$config['USERS']['group1'] = "group1password"; // create a new user password
 
 // RESTRICTED: give access to some users to edit restricted pages
 $config['RESTRICTED']['RestoreWiki'] = array("admin"); // only admin can restore wiki pages
 //$config['RESTRICTED']['HomePage'] = array("admin"); // lock the homepage - admin only
-//$config['USERS']['group1'] = "group1password"; // create a new user password
 //$config['RESTRICTED']['Group1Page'] = array("admin","group1"); // restrict this page to the listed users
 
 // IP BLOCKING: blocked IP addresses
 // $config['BLOCKED_IPS'][] = "192.168.0.*"; // block this ip address (can take wildcards)
 
-// MISC: Misc stuff
-$config['MISC']['EXTERNALLINKS_NEWWINDOW'] = false; // Open external links in a new window
-$config['MISC']['REQ_PASSWORD_TEXT_IN_EDIT_BTN'] = false; // Include the req password text in the edit button
-
 // LOCALE: text for some titles, icons, etc - you can use wiki syntax in these for images etc...
 $config['LOCALE']['EDIT_TITLE'] = "Edit: "; // title prefix for edit pages
 $config['LOCALE']['HOMEPAGE_LINK'] = "[[HomePage]]"; // link to the homepage
 $config['LOCALE']['PAGELIST_LINK'] = "[[PageList]]"; // link to the pagelist
-$config['LOCALE']['BACKUP_LINK'] = "[[BackupWiki|backup]]"; // link to the backup page
-$config['LOCALE']['RESTORE_LINK'] = "[[RestoreWiki|restore]]"; // link to the restore page
 $config['LOCALE']['REQ_PASSWORD'] = "(locked)"; // printed next to the edit btn on a locked page
 $config['LOCALE']['PASSWORD_TEXT'] = "Password:"; // printed next to the password entry box
 
@@ -114,6 +110,10 @@ $config['LICENSE']['DEFAULT'] = "creativeCommonsLicense"; // will call creativeC
 $config['LICENSE']['PageList'] = "noLicense"; // will call noLicense() function
 $config['LICENSE']['BackupWiki'] = "noLicense"; // will call noLicense() function
 $config['LICENSE']['RestoreWiki'] = "noLicense"; // will call noLicense() function
+
+// MISC: Misc stuff
+$config['MISC']['EXTERNALLINKS_NEWWINDOW'] = false; // Open external links in a new window
+$config['MISC']['REQ_PASSWORD_TEXT_IN_EDIT_BTN'] = false; // Include the req password text in the edit button
 
 //===========================================================================
 //===========================================================================
@@ -310,7 +310,7 @@ function updateWiki( &$mode, $title, $config )
 			$date = date( "Y-m-d_H-i-s" );
 			$filename = tempDir().$wikiname."_".$date.".bkup";
 			backupPages( $filename );
-			$mode = "backup";
+			$mode = "backupwiki";
 		}
 		else
 		{
@@ -321,15 +321,15 @@ function updateWiki( &$mode, $title, $config )
 	if ( $title=="RestoreWiki" )
 		if ( $backupEnabled )
 		{
-			if ( $mode=="restore"&&isset($_FILES['userfile']['name']) )
+			if ( $mode=="restorewiki"&&isset($_FILES['userfile']['name']) )
 				restorePages();
 			else
-				$mode = "restore";
+				$mode = "restorewiki";
 		}
 		else		
 		{
 			error( "Restore has been disabled." );
-			$mode = "restore";
+			$mode = "restorewiki";
 		}
 
 	// save page
@@ -374,7 +374,7 @@ function htmlHeader( $title, $config )
 	$origTitle = $title;
 	if ($title=="HomePage") 
 		$title = $config['GENERAL']['HOMEPAGE'];  
-	echo("<!DOCTYPE HTML PUBLIC \"-//W3C//DTD HTML 4.01//EN\" \"http://www.w3.org/TR/html4/strict.dtd\">\n");
+	echo("<!DOCTYPE HTML PUBLIC \"-//W3C//DTD HTML 4.01 Transitional//EN\" \"http://www.w3.org/TR/html4/loose.dtd\">\n");
 	echo("<HTML>\n");
 	echo("<HEAD>\n");
 	echo("\t<META HTTP-EQUIV=\"Content-Type\" CONTENT=\"text/html; charset=ISO-8859-1\">\n");
@@ -454,7 +454,7 @@ function wikilink( $title )
 	global $config;
 	if ( pageExists( $title ) )
 		return ("<A HREF=\"".$_SERVER['PHP_SELF']."?page=".$title."\">".$title."</A>");
-	elseif ( $config['SYNTAX']['AUTOLINKING'] )
+	elseif ( $config['SYNTAX']['AUTOCREATE'] )
 		return ($title."<A HREF=\"".$_SERVER['PHP_SELF']."?page=".$title."\">?</A>");
 	else
 		return ($title);
@@ -479,7 +479,7 @@ function webpagelink( $text )
 	else
 		$desc = $src;	
 	// is our text an image?
-	$patterns = "/{{([^{]*)}}/";
+	$patterns = "/{{(['^{']*)}}/";
 	$replacements = "\".image( \"$1\" ).\"";	
 	$cmd = (" \$desc = \"".preg_replace( $patterns, $replacements, $desc )."\";");
 	eval($cmd);			
@@ -509,7 +509,7 @@ function webpagelink( $text )
 			$window = "_self";
 			$resultstr = "<A HREF=\"".$src."\" target=\"$window\">".$desc."</A>";
 		}
-		elseif ($config['SYNTAX']['AUTOLINKING']) // maybe autolink
+		elseif ($config['SYNTAX']['AUTOCREATE']) // maybe autolink
 		{
 			$resultstr = ($src."<A HREF=\"".$_SERVER['PHP_SELF']."?page=".$src."\" target=\"$window\">?</A>");
 		}
@@ -612,7 +612,7 @@ function wikiparse( $contents )
 
 	// verbatim text
 	$patterns[0] = "/~~~(.*)~~~/";
-	$replacements[0] = "\".verbatim( \"$1\" ).\"";	
+	$replacements[0] = "\".verbatim( \"$1\" ).\"";
 
 	// webpage links
 	$patterns[1] = "/\[\[([^\[]*)\]\]/";
@@ -655,9 +655,9 @@ function wikiparse( $contents )
 	// html shortcuts
 	$patterns[3] = "/@@([^@]*)@@/";
 	$replacements[3] = "<A NAME=\\\"$1\\\"></A>";
-
+	
 	// wiki words	
-	if ( $config['SYNTAX']['AUTOLINKING'] )
+	if ( $config['SYNTAX']['WIKIWORDS'] )
 	{
 		$patterns[4] = "/([A-Z][a-z0-9]+[A-Z][A-Za-z0-9]+)/";
 		$replacements[4] = "\".wikilink( \"$1\" ).\"";	
@@ -1032,7 +1032,7 @@ function restorePages()
 		{
 			if (@touch(pagePath( $title ), $modtime, $modtime)==false)
 			{
-				error("Could not modify filetimes for $title - ensure php owns the files!");
+				error("Could not modify filetimes for $title - ensure php owns the file!");
 			}
 			$restored[] = $title;
 		}
@@ -1050,7 +1050,7 @@ function printWikiSyntax()
 	echo("\t<TABLE CLASS=\"wikisyntax\">\n");
 	echo("\t\t<TR>\n");
 	echo("\t\t\t<TD COLSPAN=3>");
-	echo( wikiparse("**__Syntax__** ~~#0000FF:(optional values)~~\n") );
+	echo(wikiparse("**__Syntax__** ")."<SPAN CLASS=\"optionalvalue\">(optional values)</SPAN><BR>");
 	echo("\t\t\t</TD>\n");
 	echo("\t\t</TR>\n");
 	echo("\t\t<TR>\n");
@@ -1060,7 +1060,7 @@ function printWikiSyntax()
 	echo( "underlined text: <BR>" );
 	echo( "verbatim text: <BR>" );
 	echo( "link: <BR>" );
-	if ( $config['SYNTAX']['AUTOLINKING'] )
+	if ( $config['SYNTAX']['WIKIWORDS'] )
 		echo( "wiki link: <BR>" );
 	echo( "image: <BR>" );
 	echo( "hex-coloured text: <BR>" );
@@ -1073,11 +1073,10 @@ function printWikiSyntax()
 	echo( "''abc''<BR>" );
 	echo( "__abc__<BR>" );
 	echo( "~~~abc~~~<BR>" );
-	echo( "[[url|".wikiparse("~~#0000FF:description~~")."|".wikiparse("~~#0000FF:target~~")."]]<BR>" );
-	if ( $config['SYNTAX']['AUTOLINKING'] )
+	echo( "[[url|<SPAN CLASS=\"optionalvalue\">description</SPAN>|<SPAN CLASS=\"optionalvalue\">target</SPAN>]]<BR>" );
+	if ( $config['SYNTAX']['WIKIWORDS'] )
 		echo( "WikiWord<BR>" );
-	echo( "{{url|".wikiparse("~~#0000FF:alt~~")."|".wikiparse("~~#0000FF:width~~")."|".wikiparse("~~#0000FF:height~~") );
-	echo( "|".wikiparse("~~#0000FF:align~~")."|".wikiparse("~~#0000FF:vertical-align~~")."}}<BR>" );
+	echo( "{{url|<SPAN CLASS=\"optionalvalue\">alt</SPAN>|<SPAN CLASS=\"optionalvalue\">width</SPAN>|<SPAN CLASS=\"optionalvalue\">height</SPAN>|<SPAN CLASS=\"optionalvalue\">align</SPAN>|<SPAN CLASS=\"optionalvalue\">vertical-align</SPAN>}}<BR>" );
 	echo( "~~#AAAAAA:grey~~<BR>" );
 	if ( $config['SYNTAX']['HTMLCODE'] )
 		echo( "%%html code%%<BR>" );
@@ -1149,12 +1148,12 @@ function displayPage( $title, &$mode, $contents="" )
 			echo( wikiparse( $contents ) );
 			echo("</SPAN>\n");
 			break;		
-		case "backup":
+		case "backupwiki":
 			echo("<SPAN CLASS=\"wiki_body\">\n");
 			echo( wikiparse( $contents ) );
 			echo("</SPAN>\n");
 			break;		
-		case "restore": 
+		case "restorewiki": 
 			if (!isset($config['INTERNAL']['DATA']['RESTORED']))
 				echo( "<FORM enctype=\"multipart/form-data\"  ACTION=\"".$_SERVER['PHP_SELF']."?page=".$title."\" METHOD=\"post\">\n" );
 			echo("<SPAN CLASS=\"wiki_body\">\n");
@@ -1205,10 +1204,15 @@ function displayControls( $title, &$mode )
 				}
 				if ($title=="PageList"&&$config['BACKUP']['ENABLE'])
 				{				
-					echo( wikiparse( " ".$config['LOCALE']['BACKUP_LINK']." ".$config['LOCALE']['RESTORE_LINK'] ) );
+					echo( "\t\t\t\t<FORM ACTION=\"".$_SERVER['PHP_SELF']."?page=".$title."\" METHOD=\"post\">\n" );
+					echo( "\t\t\t\t\t<P>\n" );
+					echo( "\t\t\t\t\t\t<INPUT NAME=\"mode\" VALUE=\"backup\" TYPE=\"SUBMIT\">" );
+					echo( "\t\t\t\t\t\t<INPUT NAME=\"mode\" VALUE=\"restore\" TYPE=\"SUBMIT\">" );
+					echo( "\n\t\t\t\t\t</P>\n" );
+					echo( "\t\t\t\t</FORM>\n" );
 				}
 				break;
-			case "backup":
+			case "backupwiki":
 				if (!anyErrors())
 				{
 					$wikiname = str_replace( " ", "_", $config['GENERAL']['TITLE'] );
@@ -1226,13 +1230,14 @@ function displayControls( $title, &$mode )
 					}
 				}
 				break;
-			case "restore":
+			case "restorewiki":
 				if ( !isset($config['INTERNAL']['DATA']['RESTORED']) )
 				{
 					echo( "\t\t\t\t\t<P>\n" );
 					echo(wikiparse(" ".$config['LOCALE']['PASSWORD_TEXT'])); 
 					echo("<input name=\"password\" type=\"password\" class=\"pass\" size=\"17\">");
-					echo( "\t\t\t\t\t<INPUT NAME=\"mode\" VALUE=\"restore\" TYPE=\"SUBMIT\">\n" );		
+					echo( "\t\t\t\t\t<INPUT NAME=\"mode\" VALUE=\"restorewiki\" TYPE=\"HIDDEN\">\n" );	
+					echo( "\t\t\t\t\t<INPUT VALUE=\"restore\" TYPE=\"SUBMIT\">\n" );		
 					echo( "\t\t\t\t\t</P>\n" );
 					echo( "\t\t\t\t</FORM>\n" );
 				}
@@ -1279,10 +1284,12 @@ function displayControls( $title, &$mode )
 // MAIN BLOCK!
 //==============
 //==============
+if ($config['CONFIGFILE']!="")
+	include($config['CONFIGFILE']); // load some external configuration settings
 
-// by defining $LIBFUNCTIONSONLY and including this file we can use all
+// by defining $PAWFALIKI_FUNCTIONS_ONLY and including this file we can use all
 // the wiki functions without actually displaying a wiki.
-if (!isset($LIBFUNCTIONSONLY))
+if (!isset($PAWFALIKI_FUNCTIONS_ONLY))
 {
 	if ($config['GENERAL']['DEBUG'])
 	{
@@ -1305,6 +1312,10 @@ if (!isset($LIBFUNCTIONSONLY))
 	{
 		// get the page title
 		$title = getTitle();
+		if ( $mode=="backup" )
+			$title = "BackupWiki";
+		if ( $mode=="restore" )
+			$title = "RestoreWiki";
 
 		// get the page contents
 		$contents = updateWiki( $mode, $title, $config );

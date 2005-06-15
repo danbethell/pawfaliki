@@ -40,6 +40,12 @@ table.wikisyntax
 	border-color: #666666;
 }
 
+/* color for opional syntax values */
+span.optionalvalue
+{
+	color: #0000FF;
+}
+
 /* page contents */
 span.wiki_body
 {	

@@ -35,7 +35,8 @@
 * Tidied up the code.
 * Brand new README & INSTALL files.
 
-== pawfaliki-0.4.5 (14/06/2005) ==
+== pawfaliki-0.4.5 (15/06/2005) ==
+* Support for an external config file.
 * Fixed a few typos.
 * Support for anchor links in current page [[#example]].
 * Ability to hide wiki controls.
@@ -43,4 +44,5 @@
 * Cosmetic fixes for IE etc. (MarcVinyes)
 * Updated the example CSS file. (MarcVinyes)
 * Support for 'password required' text in the edit button. (MarcVinyes)
-* Wrote some documentation!
+* Due to various issues pages are now only HTML4.01 Transitional compliant.
+* Some documentation.

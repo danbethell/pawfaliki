@@ -34,14 +34,25 @@ INSTALLATION
 CONFIGURATION
 =============
 
-The look of Pawfaliki can be configured using CSS. An example css file is 
-included called pawfaliki.css which you can use to make your wiki look 
-like www.pawfal.org - great! 
+The look of Pawfaliki can be configured using CSS. An example css file is
+included called pawfaliki.css which you can use to make your wiki look
+like www.pawfal.org - great!
 
 Very near the top of pawfaliki.php is the configuration section. This consists
-of a collection of variables all stored the $config array.
+of a collection of variables stored in the $config array which you can edit as 
+you require. A description of these variables can be found below.
 
-Edit these as you require:
+If you're overwriting a few of these settings it may be easier to put all your 
+settings in an additional PHP file and specify it using the 
+$config['CONFIGFILE'] variable - see the exampleconfig.php file included with 
+pawfaliki for an example.
+
+$config['CONFIGFILE']
+- Filename for an additonal configuration file.
+- This file gets sourced after the main config section.
+- Useful for keeping all your site-specific settings when upgrading.
+- Needs to be valid PHP - see pawfaliki.cfg for an example.
+- By default set to "" (none).
 
 //=======================================
 // GENERAL: General configuration stuff
@@ -76,6 +87,21 @@ $config['GENERAL']['MODTIME_FORMAT']
  - A date() compatible format string.
  - Used to display the modification times on the pagelist.
  - By default set to "(D M j G:i:s T Y)".
+ 
+$config['GENERAL']['SHOW_CONTROLS']
+ - Show all the wiki controls - edit, save, PageList etc...
+ - By default set to true.
+ 
+$config['GENERAL']['DEBUG']
+ - Display debug information (pagegen time, uptime, load).
+ - By default set to false.
+
+$config['GENERAL']['CONFIG']
+ - Filename for an additonal configuration file.
+ - This file gets sourced **after** the main config section.
+ - Useful for keeping all your site-specific settings when upgrading.
+ - Needs to be valid PHP - see pawfaliki.cfg for an example.
+ - By default set to "" (none).
 
 //==============================
 // SYNTAX: Wiki editing syntax
@@ -84,8 +110,12 @@ $config['SYNTAX']['SHOW_BOX']
  - Display the wiki syntax box on the edit page?
  - By default set to true.
  
-$config['SYNTAX']['AUTOLINKING']
+$config['SYNTAX']['WIKIWORDS']
  - Allow auto-generation of wiki links from WikiWords.
+ - By default set to true.
+ 
+$config['SYNTAX']['AUTOCREATE']
+ - Display ? next to wiki pages that don't exist yet.
  - By default set to true.
  
 $config['SYNTAX']['HTMLCODE']
@@ -121,7 +151,7 @@ $config['RSS']['ITEMS']
  - Use -1 for all pages.
  - By default set to 10.
  
-$config['RSS']['TITLE_MODTIME']; 
+$config['RSS']['TITLE_MODTIME']
  - Prints the file modification time in the RSS item title.
  - By default set to false.
 
@@ -153,13 +183,16 @@ $config['EMAIL']['SHOW_IP']
  - Think twice about enabling this if you're emailing to a public list etc.
 
 //==============================
-// PASSWORDS: setup passwords
+// USERS: setup user passwords
 //==============================
 $config['USERS']
  - This is an array of users and their passwords.
  - By default user 'admin' has the password 'adminpassword'.
  - Changing the default password would be a good idea!
 
+//===========================================
+// RESTRICTED: setup restricted page access
+//===========================================
 $config['RESTRICTED']
  - This is an array of pages and the users that can edit them.
  - By default RestoreWiki is restricted so only 'admin' can restore backups.
@@ -170,13 +203,6 @@ $config['RESTRICTED']
 $config['BLOCKED_IPS']
  - This is an array of IP addresses to block from editing the wiki.
  - By default no IPs are blocked.
-
-//===================
-// MISC: Misc stuff
-//===================
-$config['MISC']['EXTERNALLINKS_NEWWINDOW'] 
- - Opens external links in a new window.
- - By default set to false.
 
 //===========================================
 // LOCALE: text for some titles, icons, etc
@@ -193,14 +219,6 @@ $config['LOCALE']['HOMEPAGE_LINK']
 $config['LOCALE']['PAGELIST_LINK']
  - The PageList link text
  - By default set to "[[PageList]]"
- 
-$config['LOCALE']['BACKUP_LINK']
- - The BackupWiki link text
- - By default set to "[[BackupWiki|backup]]"
- 
-$config['LOCALE']['RESTORE_LINK']
- - The RestoreWiki link text
- - By default set to "[[RestoreWiki|restore]]"
  
 $config['LOCALE']['REQ_PASSWORD']
  - Text to print next to the edit button on a restricted page.
@@ -225,4 +243,15 @@ $config['LICENSE']
  - The default for pages is specified using the 'DEFAULT' element.
  - By default 'DEFAULT' uses the creativeCommonsLicense() function.
  - By default 'PageList', 'BackupWiki', and 'RestoreWiki' use noLicense().
+ 
+//===================
+// MISC: Misc stuff
+//===================
+$config['MISC']['EXTERNALLINKS_NEWWINDOW'] 
+ - Opens external links in a new window.
+ - By default set to false.
+ 
+$config['MISC']['REQ_PASSWORD_TEXT_IN_EDIT_BTN'] 
+ - Include the req password text in the edit button
+ - By default set to false.
  
