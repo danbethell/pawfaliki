@@ -21,7 +21,7 @@
 
 // setup some global storage
 $config = array();
-$config['PAWFALIKI_VERSION'] = "0.4.5"; // Pawfaliki version
+$config['PAWFALIKI_VERSION'] = "0.5.0pre"; // Pawfaliki version
 $config['GENERAL'] = array();
 $config['SYNTAX'] = array();
 $config['BACKUP'] = array();
@@ -87,6 +87,7 @@ $config['USERS']['admin'] = "adminpassword"; // changing this would be a good id
 
 // RESTRICTED: give access to some users to edit restricted pages
 $config['RESTRICTED']['RestoreWiki'] = array("admin"); // only admin can restore wiki pages
+//$config['RESTRICTED']['HTTP'] = array("admin"); // uses HTTP auth to make entire wiki private
 //$config['RESTRICTED']['HomePage'] = array("admin"); // lock the homepage - admin only
 //$config['RESTRICTED']['Group1Page'] = array("admin","group1"); // restrict this page to the listed users
 
@@ -297,6 +298,7 @@ function authPassword( $title, $password )
 // update the wiki - save/edit/backup/restore/cancel
 function updateWiki( &$mode, $title, $config )
 {	
+	$contents = false;
 	$backupEnabled = $config['BACKUP']['ENABLE'];
 	// cleanup any temp files
 	if ( $backupEnabled )
@@ -548,30 +550,33 @@ function colouredtext( $text )
 // place an image
 function image( $text )
 {	
-	$results = explode( "|", $text );
-	$size=count($results);	
-	$src="";
-	$desc="";
-	$align="";
-	$valign="";
-	if ($size>=1)
-		$src = " SRC=\"".$results[0]."\"";
-	if ($size>=2)
-		$desc = " ALT=\"".$results[1]."\"";
-	else
-		$desc = " ALT=\"[img]\"";
-	if ($size>=3)
-		$desc .= " WIDTH=\"".$results[2]."\"";
-	if ($size>=4)
-		$desc .= " HEIGHT=\"".$results[3]."\"";
-	if ($size>=5)
-		$align = "align:".$results[4].";";
-	if ($size>=6)
-		$valign=" vertical-align:".$results[5].";";	
-	$resultstr="";
-	if ($size>0)
-		$resultstr = "<IMG".$src." STYLE=\"border:0pt none;".$width.$height.$align.$valign."\"".$desc.">";
-	return verbatim( $resultstr );
+  $results = explode( "|", $text );
+  $size=count($results);
+  $src="";
+  $desc="";
+  $width='';
+  $height='';
+  $align="";
+  $valign="";
+  if ($size>=1)
+     $src = " SRC=\"".$results[0]."\"";
+  if ($size>=2)
+     $desc = " ALT=\"".$results[1]."\"";
+  else
+     $desc = " ALT=\"[img]\"";
+  if ($size>=3)
+     $width .= " width: ".$results[2]."px;";
+  if ($size>=4)
+     $height .= " height: ".$results[3]."px;";
+  if ($size>=5)
+     $align = " float: ".$results[4].";";
+  if ($size>=6)
+     $valign=" vertical-align: ".$results[5].";";
+  $resultstr="";
+  if ($size>0)
+     $resultstr = "<IMG" . $src. " STYLE=\"border:0pt none;" . $width . 
+     	$height . $align . $valign . "\"" .$desc . ">";
+  return verbatim( $resultstr );
 }
 
 // get some verbatim text
@@ -824,10 +829,11 @@ function rssFeed()
 		$title = basename($key);
 		$modtime = date( $config['RSS']['MODTIME_FORMAT'], $val );
 		$description = $title." ".$modtime;
-		if ($config['RSS']['TITLE_MODTIME'])
-			$title = $description;			
 		echo( "\t\t<item>\n" );
-		echo( "\t\t\t<title>$title</title>\n" );
+        if ($config['RSS']['TITLE_MODTIME'])             
+			echo( "\t\t\t<title>$description</title>\n" );
+        else
+            echo( "\t\t\t<title>$title</title>\n" );
 		echo( "\t\t\t<link>$url?page=$title</link>\n" );	
 		echo( "\t\t\t<description>$description</description>\n" );
 		echo( "\t\t</item>\n" );	
@@ -1287,6 +1293,40 @@ function displayControls( $title, &$mode )
 if ($config['CONFIGFILE']!="")
 	include($config['CONFIGFILE']); // load some external configuration settings
 
+// Restrict access to entire wiki using HTTP Authentication mechanism
+// (only available if php interface is via apache module.
+if (isset($config['RESTRICTED']['HTTP']))
+{
+	if ( php_sapi_name()=="apache" )
+	{
+		$http_auth_users = array_values($config['RESTRICTED']['HTTP']);
+		if (count($http_auth_users)>0)
+		{
+			$ServerKeys = array_keys( $_SERVER );
+			$User = in_array( 'PHP_AUTH_USER', $ServerKeys ) ? $_SERVER['PHP_AUTH_USER'] : '';
+			$Password = in_array( 'PHP_AUTH_PW', $ServerKeys ) ? $_SERVER['PHP_AUTH_PW'] : '';
+			$Auth = false;
+			if ( in_array( $User, $http_auth_users ) )
+			{
+				if ( $config['USERS'][$User]==$Password )
+					$Auth = true;
+			}
+			if ( !$Auth )
+			{
+				 Header( "WWW-authenticate: basic realm=\"".$config['GENERAL']['TITLE']."\"" );
+				 Header( 'HTTP/1.0 401 Unauthorized' );
+				 echo( "<HTML>\n\t<HEAD>\n\t\t<TITLE>401 Unauthorised</TITLE>\n\t</HEAD>\n\t<BODY>\n" );
+				 echo( "\t\t<H1>You are not authorised to access ".$config['GENERAL']['TITLE'].".</H1>" );
+				 echo( "\n\t</BODY>\n</HTML>\n" );
+				 exit();
+			}
+		}	
+	}
+	else
+		error( "HTTP authentication is only available when PHP interface is via apache module!");
+}
+
+
 // by defining $PAWFALIKI_FUNCTIONS_ONLY and including this file we can use all
 // the wiki functions without actually displaying a wiki.
 if (!isset($PAWFALIKI_FUNCTIONS_ONLY))
@@ -1302,40 +1342,38 @@ if (!isset($PAWFALIKI_FUNCTIONS_ONLY))
 
 	// find out what wiki 'mode' we're in
 	$mode = getMode();
-
-	$format = $_GET['format'];
+	$format = in_array('format', array_keys ($_GET)) ? $_GET['format'] : false;
 	if ( $format=="rss"&&$config['RSS']['ENABLE'] )
 	{
 		rssFeed();
+		exit();
 	}
+	
+	// get the page title
+	$title = getTitle();
+	if ( $mode=="backup" )
+		$title = "BackupWiki";
+	if ( $mode=="restore" )
+		$title = "RestoreWiki";
+
+	// get the page contents
+	$contents = updateWiki( $mode, $title, $config );
+
+	// page header
+	if ($mode=="edit") 
+		htmlHeader(wikiparse($config['LOCALE']['EDIT_TITLE']).$title, $config); 
 	else
-	{
-		// get the page title
-		$title = getTitle();
-		if ( $mode=="backup" )
-			$title = "BackupWiki";
-		if ( $mode=="restore" )
-			$title = "RestoreWiki";
+		htmlHeader($title, $config); 
 
-		// get the page contents
-		$contents = updateWiki( $mode, $title, $config );
+	// page contents
+	htmlStartBlock();
+	displayPage($title, $mode, $contents);
+	htmlEndBlock();
 
-		// page header
-		if ($mode=="edit") 
-			htmlHeader(wikiparse($config['LOCALE']['EDIT_TITLE']).$title, $config); 
-		else
-			htmlHeader($title, $config); 
+	// page controls
+	displayControls($title, $mode);
 
-		// page contents
-		htmlStartBlock();
-		displayPage($title, $mode, $contents);
-		htmlEndBlock();
-
-		// page controls
-		displayControls($title, $mode);
-
-		// page footer
-		htmlFooter();
-	}
+	// page footer
+	htmlFooter();
 }
 ?>
