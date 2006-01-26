@@ -196,6 +196,11 @@ $config['USERS']
 $config['RESTRICTED']
  - This is an array of pages and the users that can edit them.
  - By default RestoreWiki is restricted so only 'admin' can restore backups.
+ 
+$config['RESTRICTED']['HTTP']
+ - If this is enabled HTTPAUTH is used to protect the entire wiki.
+ - This is an array of the users who can access the wiki.
+ - Only works if you PHP is running in the apache module mode.
 
 //====================================
 // IP BLOCKING: blocked IP addresses
