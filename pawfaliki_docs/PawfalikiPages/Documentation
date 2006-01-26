@@ -21,6 +21,8 @@ __**:: Contents ::**__
 * [[#techref|Technical Reference]]
   - [[#pawfalikifunctions|Utilising Pawfaliki PHP Functions]]
 * [[#authors|Authors]]
+  - [[#contrib|Contributors]]
+  - [[#thanks|Thanks]]
 
 
 @@install@@__**:: Installation ::**__
@@ -171,6 +173,11 @@ If you're overwriting a few of these settings it may be easier to put all your s
 ''~~~$config['RESTRICTED']~~~''
  - This is an array of pages and the users that can edit them.
  - By default ~~~RestoreWiki~~~ is restricted so only 'admin' can restore backups.
+ 
+''~~~$config['RESTRICTED']['HTTP']~~~''
+ - If this is enabled HTTPAUTH is used to protect the entire wiki.
+ - This is an array of the users who can access the wiki.
+ - Only works if you PHP is running in the apache module mode.
 
 @@blockedips@@__Blocked IPs__
 ''~~~$config['BLOCKED_IPS']~~~''
@@ -273,14 +280,17 @@ You can then use the ''wikiParse()'' function which takes a string of wiki code 
 
 @@authors@@__**:: Authors ::**__
 
-Dan Bethell
+[[http://www.pawfal.org/pawfaliki|Pawfaliki]] is written by Dan Bethell.
     dan at pawfal dot org
     [[http://www.pawfal.org]]
+
+@@contrib@@__Contributors__
+
+A **massive** thanks to the following for contributing bug fixes, feature implementations, and support:
+[[http://mvinyes.redirectme.net|Marc Vinyes]]
+[[http://www.andy-preston.co.uk|Andy Preston]]
+
+@@thanks@@__Thanks__
 		
-Marc Vinyes
-    marc_contrib at ramonvinyes dot es
-    [[http://litlnemo.redirectme.net]]
-		
-Thanks to:
-    [[http://www.pulsewidth.ca|PulseWidth]] for being user #1 and suggesting CSS.
-    [[http://www.pawfal.org/nebogeo|Dave Griffiths]] for coming up with ideas & breaking everything... twice.
+[[http://www.pulsewidth.ca|PulseWidth]] for being user #1 and suggesting CSS before I'd even heard of it!
+[[http://www.pawfal.org/nebogeo|Dave Griffiths]] for coming up with ideas & breaking everything... twice.
