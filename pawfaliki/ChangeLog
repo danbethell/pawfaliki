@@ -1,48 +1,55 @@
-== pawfaliki-0.1.0 (10/08/2004) ==
-* Initial version of everything.
+== pawfaliki-0.5.0 (26/01/2006) ==
+* Added support for locking entire wiki using HTTPAUTH. (DanBethell & AndyPreston)
+* Fixed bug in updateWiki(). (AndyPreston)
+* Fixed bug in RSS feed. (MarcVinyes)
+* Fixed bug in image alignment code. (AndyPreston)
+* Fixed bug where $ symbols broke stuff. (DanBethell)
 
-== pawfaliki-0.2.0 (10/11/2004) ==
-* Added CSS support.
-* Fixed wordwrapping bugs.
-* Fixed coloured text bugs.
-* Everything should be transitional html4.0 compliant.
-* Added licensing information.
-* Added locking page support.
-
-== pawfaliki-0.3.0 (11/11/2004) ==
-* Rewritten parser maintains whitespace without having to use the <PRE> tag.
-* All pages are now html4.01 strict compliant.
-* Ip blocking now enabled. Even works with wildcards.
+== pawfaliki-0.4.5 (15/06/2005) ==
+* Support for an external config file. (DanBethell)
+* Fixed a few typos. (DanBethell)
+* Support for anchor links in current page [[#example]]. (DanBethell)
+* Ability to hide wiki controls. (DanBethell)
+* Ability to enable 'debug mode'. (DanBethell)
+* Cosmetic fixes for IE etc. (MarcVinyes)
+* Updated the example CSS file. (MarcVinyes)
+* Support for 'password required' text in the edit button. (MarcVinyes)
+* Due to various issues pages are now only HTML4.01 Transitional compliant. (DanBethell)
+* Some documentation. (DanBethell)
 
 == pawfaliki-0.4.0 (09/05/2005) ==
-* Backup & restore with zlib compression (if enabled).
-* Email page changes.
-* RSS feed of recently modified pages.
+* Backup & restore with zlib compression (if enabled). (DanBethell)
+* Email page changes. (DanBethell)
+* RSS feed of recently modified pages. (DanBethell)
 * Restricted access support with password protection. (MarcVinyes)
-* Support for multiple licenses.
-* Syntax info block on edit page.
-* Support for using functions in other php scripts.
+* Support for multiple licenses. (DanBethell)
+* Syntax info block on edit page. (DanBethell)
+* Support for using functions in other php scripts. (DanBethell)
 * Specify wiki pages using [[]] tags. (MarcVinyes)
 * Ability to disable auto-generated WikiLinks. (MarcVinyes)
 * Ability to enable HTML in wiki pages. (MarcVinyes)
 * Better error handling. (MarcVinyes)
 * Support for targets in links. (MarcVinyes)
-* Support for images in link syntax.
-* Syntax for page anchors.
-* Misc. extra configuration options.
-* Very limited localised text support.
-* Fixed some misc. bugs.
-* Tidied up the code.
-* Brand new README & INSTALL files.
+* Support for images in link syntax. (DanBethell)
+* Syntax for page anchors. (DanBethell)
+* Misc. extra configuration options. (DanBethell)
+* Very limited localised text support. (DanBethell)
+* Fixed some misc. bugs. (DanBethell)
+* Tidied up the code. (DanBethell)
+* Brand new README & INSTALL files. (DanBethell)
 
-== pawfaliki-0.4.5 (15/06/2005) ==
-* Support for an external config file.
-* Fixed a few typos.
-* Support for anchor links in current page [[#example]].
-* Ability to hide wiki controls.
-* Ability to enable 'debug mode'.
-* Cosmetic fixes for IE etc. (MarcVinyes)
-* Updated the example CSS file. (MarcVinyes)
-* Support for 'password required' text in the edit button. (MarcVinyes)
-* Due to various issues pages are now only HTML4.01 Transitional compliant.
-* Some documentation.
+== pawfaliki-0.3.0 (11/11/2004) ==
+* Rewritten parser maintains whitespace without having to use the <PRE> tag. (DanBethell)
+* All pages are now html4.01 strict compliant. (DanBethell)
+* Ip blocking now enabled. Even works with wildcards. (DanBethell)
+
+== pawfaliki-0.2.0 (10/11/2004) ==
+* Added CSS support. (DanBethell)
+* Fixed wordwrapping bugs. (DanBethell)
+* Fixed coloured text bugs. (DanBethell)
+* Everything should be transitional html4.0 compliant. (DanBethell)
+* Added licensing information. (DanBethell)
+* Added locking page support. (DanBethell)
+
+== pawfaliki-0.1.0 (10/08/2004) ==
+* Initial version of everything. (DanBethell)
