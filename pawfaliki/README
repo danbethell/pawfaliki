@@ -1,5 +1,5 @@
 
-                     ** Pawfaliki v0.4.0 **
+                     ** Pawfaliki v0.5.0 **
 
 Pawfaliki is a wiki written entirely in 1 php file.
 
@@ -28,7 +28,7 @@ See the ChangeLog file for a list of changes.
 Full documentation is available at the Pawfaliki web site:
 
     http://www.pawfal.org/pawfaliki
-				
+
 
 LICENSING
 =========

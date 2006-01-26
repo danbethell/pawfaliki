@@ -21,7 +21,7 @@
 
 // setup some global storage
 $config = array();
-$config['PAWFALIKI_VERSION'] = "0.5.0pre"; // Pawfaliki version
+$config['PAWFALIKI_VERSION'] = "0.5.0"; // Pawfaliki version
 $config['GENERAL'] = array();
 $config['SYNTAX'] = array();
 $config['BACKUP'] = array();
@@ -1294,7 +1294,7 @@ if ($config['CONFIGFILE']!="")
 	include($config['CONFIGFILE']); // load some external configuration settings
 
 // Restrict access to entire wiki using HTTP Authentication mechanism
-// (only available if php interface is via apache module.
+// (only available if php interface is via apache module).
 if (isset($config['RESTRICTED']['HTTP']))
 {
 	if ( php_sapi_name()=="apache" )
