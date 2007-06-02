@@ -20,7 +20,7 @@
 
 // setup some global storage
 $config = array();
-$config['PAWFALIKI_VERSION'] = "0.5.0"; // Pawfaliki version
+$config['PAWFALIKI_VERSION'] = "0.5.1"; // Pawfaliki version
 $config['GENERAL'] = array();
 $config['SYNTAX'] = array();
 $config['BACKUP'] = array();
@@ -163,9 +163,9 @@ function css( $pagename )
   		$tokens = explode(":", $css );
 	    $title = $tokens[0];
 		$path = implode(":", array_slice( $tokens, 1));
-	    echo( "\t<LINK REL=\"stylesheet\" TYPE=\"text/css\" HREF=\"".$path."\" TITLE=\"".$title."\">\n");
+	    echo( "\t<link rel=\"stylesheet\" type=\"text/css\" href=\"".$path."\" title=\"".$title."\" />\n");
 		if ( $config['RSS']['ENABLE'] &&$pagename=="HomePage" )
-			echo( "\t<LINK REL=\"alternate\" TITLE=\"".$config['GENERAL']['TITLE']." RSS\" HREF=\"".$_SERVER['PHP_SELF']."?format=rss\" TYPE=\"application/rss+xml\">\n" );
+			echo( "\t<link rel=\"alternate\" title=\"".$config['GENERAL']['TITLE']." RSS\" href=\"".$_SERVER['PHP_SELF']."?format=rss\" type=\"application/rss+xml\" />\n" );
 	}
 }
 
@@ -374,34 +374,41 @@ function htmlHeader( $title, $config )
 {
 	$origTitle = $title;
 	if ($title=="HomePage") 
-		$title = $config['GENERAL']['HOMEPAGE'];  
-	echo("<!DOCTYPE HTML PUBLIC \"-//W3C//DTD HTML 4.01 Transitional//EN\" \"http://www.w3.org/TR/html4/loose.dtd\">\n");
-	echo("<HTML>\n");
-	echo("<HEAD>\n");
-	echo("\t<META HTTP-EQUIV=\"Content-Type\" CONTENT=\"text/html; charset=ISO-8859-1\">\n");
+	  $title = $config['GENERAL']['HOMEPAGE'];  
+	echo("<!DOCTYPE html PUBLIC \"-//W3C//DTD XHTML 1.0 Strict//EN\" \"http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd\">\n");
+	echo("<html xmlns=\"http://www.w3.org/1999/xhtml\" xml:lang=\"en\" lang=\"en\">\n");
+	echo("<head>");
+	echo("\n");
+	echo("\t<meta http-equiv=\"Content-Type\" content=\"text/html; charset=utf-8\" />\n");
 	css($origTitle);
-	echo("\t<TITLE>");  
+	echo("\t<title>");
 	if ($config['GENERAL']['TITLE']==$title)
 		echo($config['GENERAL']['TITLE']);
 	else
-		echo($config['GENERAL']['TITLE']." :: ".$title);	
-	echo("</TITLE>\n");
-	echo("</HEAD>\n");
-	echo("<BODY>\n");
+	  echo($config['GENERAL']['TITLE']." :: ".$title);	
+	echo("</title>\n");
+	echo("</head>\n");
+	echo("<body>\n");
 
 	// any errors?
 	foreach ($config['INTERNAL']['ERRORS'] as $err)
-	echo( "<P CLASS=\"error\">ERROR: ".$err."</P>" );
-
-	echo("\t<TABLE WIDTH=\"100%\">\n");
-	echo("\t\t<TR>\n");
-	echo("\t\t\t<TD ALIGN=\"left\"><SPAN CLASS=\"wiki_header\">".$title."</SPAN></TD>\n");
-	echo("\t\t\t<TD ALIGN=\"right\">");
+	  echo( "<p class=\"error\">ERROR: ".$err."</p>" );
+	  
+	if ( getMode()=="restore" )
+	{
+		if (!isset($config['INTERNAL']['DATA']['RESTORED']))
+			echo( "\t<form enctype=\"multipart/form-data\"  action=\"".$_SERVER['PHP_SELF']."?page=".$title."\" method=\"post\">\n" );
+	}	
+	  
+	echo("\t<table width=\"100%\">\n");
+	echo("\t\t<tr>\n");
+	echo("\t\t\t<td align=\"left\"><span class=\"wiki_header\">".$title."</span></td>\n");
+	echo("\t\t\t<td align=\"right\">");
 	if ($config['GENERAL']['SHOW_CONTROLS'])
 		echo(wikiparse( $config['LOCALE']['HOMEPAGE_LINK']." ".$config['LOCALE']['PAGELIST_LINK'] ) );
-	echo( "</TD>\n");
-	echo("\t\t</TR>\n");
-	echo("\t</TABLE>\n");
+	echo( "</td>\n");
+	echo("\t\t</tr>\n");
+	echo("\t</table>\n");
 }
 
 // generate our html footer
@@ -421,21 +428,21 @@ function htmlFooter()
 		$mins = $uptime/60%60;
 		$secs = $uptime%60;
 		
-		echo( "<HR><B><U>DEBUG</U></B><BR>" );
+		echo( "<hr><b><u>DEBUG</u></b><br />" );
 		echo( wikiparse( "~~#FF0000:PAGE GENERATION:~~ $duration secs\n" ) );	
 		echo( wikiparse( "~~#FF0000:SERVER UPTIME:~~ $days day(s) $hours hour(s) $mins minute(s) and $secs second(s)\n" ) );
 		echo( wikiparse( "~~#FF0000:SERVER LOAD:~~ $load\n" ) );
 	}
-	echo("\t</BODY>\n</HTML>\n");
+	echo("\t</body>\n</html>\n");
 }
 
 // the start of our wiki body
 function htmlStartBlock()
 {
-	echo("\t<HR>\n");
-	echo("\t<TABLE WIDTH=\"100%\" CLASS=\"wiki_body_container\">\n");
-	echo("\t\t<TR>\n");
-	echo("\t\t\t<TD>\n");
+	echo("\t<hr />\n");
+	echo("\t<table width=\"100%\" class=\"wiki_body_container\">\n");
+	echo("\t\t<tr>\n");
+	echo("\t\t\t<td>\n");
 	echo("\n<!-- PAGE BODY -->\n");
 }
 
@@ -443,10 +450,10 @@ function htmlStartBlock()
 function htmlEndBlock()
 {
 	echo("<!-- END OF PAGE BODY -->\n\n");
-	echo("\t\t\t</TD>\n");
-	echo("\t\t</TR>\n");
-	echo("\t</TABLE>\n");
-	echo("\t<HR>\n");
+	echo("\t\t\t</td>\n");
+	echo("\t\t</tr>\n");
+	echo("\t</table>\n");
+	echo("\t<hr />\n");
 }
 
 // link to another wiki page
@@ -454,9 +461,9 @@ function wikilink( $title )
 {
 	global $config;
 	if ( pageExists( $title ) )
-		return ("<A HREF=\"".$_SERVER['PHP_SELF']."?page=".$title."\">".$title."</A>");
+		return ("<a href=\"".$_SERVER['PHP_SELF']."?page=".$title."\">".$title."</a>");
 	elseif ( $config['SYNTAX']['AUTOCREATE'] )
-		return ($title."<A HREF=\"".$_SERVER['PHP_SELF']."?page=".$title."\">?</A>");
+		return ($title."<a href=\"".$_SERVER['PHP_SELF']."?page=".$title."\">?</a>");
 	else
 		return ($title);
 }
@@ -503,23 +510,27 @@ function webpagelink( $text )
 		{
 			$src = $_SERVER['PHP_SELF']."?page=".$src;
 			$window = "_self";
-			$resultstr = "<A HREF=\"".$src."\" target=\"$window\">".$desc."</A>";
+			$resultstr = "<a href=\"".$src."\" onclick=\"target='$window';\">".$desc."</a>";
 		}
 		elseif ($src[0]=="#") // maybe its an anchor link
 		{
 			$window = "_self";
-			$resultstr = "<A HREF=\"".$src."\" target=\"$window\">".$desc."</A>";
+			$resultstr = "<a href=\"".$src."\" onclick=\"target='$window';\">".$desc."</a>";
 		}
 		elseif ($config['SYNTAX']['AUTOCREATE']) // maybe autolink
 		{
-			$resultstr = ($src."<A HREF=\"".$_SERVER['PHP_SELF']."?page=".$src."\" target=\"$window\">?</A>");
+			$search_for_dot = strrchr( $src, "." ); // don't support names with dots in - prevents creating executable scripts
+			if( !$search_for_dot )		
+				$resultstr = ($src."<a href=\"".$_SERVER['PHP_SELF']."?page=".$src."\" onclick=\"target='$window';\">?</A>");
+			else
+				$resultstr = $src;
 		}
 		else
 			$resultstr = $desc;
 	}
 	else
 	{		
-		$resultstr = "<A HREF=\"".$src."\" target=\"$window\">".$desc."</A>";			
+		$resultstr = "<a href=\"".$src."\" onclick=\"target='$window';\">".$desc."</a>";			
 	}
 	return verbatim( $resultstr );
 }
@@ -542,7 +553,7 @@ function colouredtext( $text )
 		return $text;		
 	$colour=$results[0];
 	$contents = wikiEval(implode(":", array_slice( $results, 1)));
-	$resultstr = "<SPAN STYLE=\"color: #".$colour.";\">".$contents."</SPAN>";
+	$resultstr = "<span style=\"color: #".$colour.";\">".$contents."</span>";
 	return verbatim( $resultstr );
 }
 
@@ -558,11 +569,11 @@ function image( $text )
   $align="";
   $valign="";
   if ($size>=1)
-     $src = " SRC=\"".$results[0]."\"";
+     $src = " src=\"".$results[0]."\"";
   if ($size>=2)
-     $desc = " ALT=\"".$results[1]."\"";
+     $desc = " alt=\"".$results[1]."\"";
   else
-     $desc = " ALT=\"[img]\"";
+     $desc = " alt=\"[img]\"";
   if ($size>=3)
      $width .= " width: ".$results[2]."px;";
   if ($size>=4)
@@ -573,8 +584,8 @@ function image( $text )
      $valign=" vertical-align: ".$results[5].";";
   $resultstr="";
   if ($size>0)
-     $resultstr = "<IMG" . $src. " STYLE=\"border:0pt none;" . $width . 
-     	$height . $align . $valign . "\"" .$desc . ">";
+     $resultstr = "<img" . $src. " style=\"border:0pt none;" . $width . 
+     	$height . $align . $valign . "\"" .$desc . " />";
   return verbatim( $resultstr );
 }
 
@@ -612,7 +623,7 @@ function wikiparse( $contents )
 	global $config;
 	$patterns = array();
 	$replacements = array();
-	$contents = htmlspecialchars($contents, ENT_COMPAT, "ISO8859-1");
+	$contents = htmlspecialchars($contents, ENT_COMPAT, "UTF-8");
 
 	// verbatim text
 	$patterns[0] = "/~~~(.*)~~~/";
@@ -646,19 +657,19 @@ function wikiparse( $contents )
 
 	// bold
 	$patterns[0] = "/\*\*([^\*]*[^\*]*)\*\*/";
-	$replacements[0] = "<B>$1</B>";
+	$replacements[0] = "<b>$1</b>";
 
 	// italic
 	$patterns[1] = "/''([^']*[^']*)''/";
-	$replacements[1] = "<I>$1</I>";
+	$replacements[1] = "<i>$1</i>";
 
 	// underline
 	$patterns[2] = "/__([^_]*[^_]*)__/";
-	$replacements[2] = "<SPAN STYLE=\\\"text-decoration: underline;\\\">$1</SPAN>";	
+	$replacements[2] = "<span style=\\\"text-decoration: underline;\\\">$1</span>";	
 
 	// html shortcuts
 	$patterns[3] = "/@@([^@]*)@@/";
-	$replacements[3] = "<A NAME=\\\"$1\\\"></A>";
+	$replacements[3] = "<a name=\\\"$1\\\"></a>";
 	
 	// wiki words	
 	if ( $config['SYNTAX']['WIKIWORDS'] )
@@ -948,6 +959,7 @@ function restorePages()
 		$numPages = trim(gzgets($fd));
 	else
 		$numPages = trim(fgets($fd));
+		
 	if ($numPages>0) // must be at least 1 page
 	{
 		for ($i=0; $i<$numPages; $i++)
@@ -963,8 +975,8 @@ function restorePages()
 				@fgets($fd); if (feof($fd)) {$fileerror="Invalid title on page $i!";} // read title
 				@fgets($fd); if (feof($fd)) {$fileerror="Invalid mod time on page $i!";} // mod time
 				$numLines = trim(fgets($fd)); // num lines
-			}
-						
+			}		
+							
 			if ($numLines>0) // must have at least 1 line
 			{
 				for ($j=0; $j<$numLines; $j++)
@@ -997,7 +1009,7 @@ function restorePages()
 	{
 		$str = "This does not appear to be a valid backup file!";
 		if(!$zlib)
-			$str .= "<BR>NOTE: Zlib is not enabled so restoring a compressed file will not work.";
+			$str .= "<br />NOTE: Zlib is not enabled so restoring a compressed file will not work.";
 		error($str);
 		return;
 	}		
@@ -1052,43 +1064,45 @@ function restorePages()
 function printWikiSyntax()
 {
 	global $config;
-	echo("\t<TABLE CLASS=\"wikisyntax\">\n");
-	echo("\t\t<TR>\n");
-	echo("\t\t\t<TD COLSPAN=3>");
-	echo(wikiparse("**__Syntax__** ")."<SPAN CLASS=\"optionalvalue\">(optional values)</SPAN><BR>");
-	echo("\t\t\t</TD>\n");
-	echo("\t\t</TR>\n");
-	echo("\t\t<TR>\n");
-	echo("\t\t\t<TD ALIGN=\"right\">");
-	echo( "bold text: <BR>" );
-	echo( "italic text: <BR>" );
-	echo( "underlined text: <BR>" );
-	echo( "verbatim text: <BR>" );
-	echo( "link: <BR>" );
+	echo("\t<div class=\"wikisyntax\">\n");
+	echo("\t<table>\n");
+	echo("\t\t<tr>\n");
+	echo("\t\t\t<td colspanCO=3>");
+	echo(wikiparse("**__Syntax__** ")."<span class=\"optionalvalue\">(optional values)</span><br />");
+	echo("\t\t\t</td>\n");
+	echo("\t\t</tr>\n");
+	echo("\t\t<tr>\n");
+	echo("\t\t\t<td align=\"right\">");
+	echo( "bold text: <br />" );
+	echo( "italic text: <br />" );
+	echo( "underlined text: <br />" );
+	echo( "verbatim text: <br />" );
+	echo( "link: <br />" );
 	if ( $config['SYNTAX']['WIKIWORDS'] )
-		echo( "wiki link: <BR>" );
-	echo( "image: <BR>" );
-	echo( "hex-coloured text: <BR>" );
+		echo( "wiki link: <br />" );
+	echo( "image: <br />" );
+	echo( "hex-coloured text: <br />" );
 	if ( $config['SYNTAX']['HTMLCODE'] )
-		echo( "html code: <BR>" );
-	echo( "anchor link: <BR>" );
-	echo("\t\t\t</TD>\n");
-	echo("\t\t\t<TD>");
-	echo( "**abc**<BR>" );
-	echo( "''abc''<BR>" );
-	echo( "__abc__<BR>" );
-	echo( "~~~abc~~~<BR>" );
-	echo( "[[url|<SPAN CLASS=\"optionalvalue\">description</SPAN>|<SPAN CLASS=\"optionalvalue\">target</SPAN>]]<BR>" );
+		echo( "html code: <br />" );
+	echo( "anchor link: <br />" );
+	echo("\t\t\t</td>\n");
+	echo("\t\t\t<td>");
+	echo( "**abc**<br />" );
+	echo( "''abc''<br />" );
+	echo( "__abc__<br />" );
+	echo( "~~~abc~~~<br />" );
+	echo( "[[url|<span class=\"optionalvalue\">description</span>|<span class=\"optionalvalue\">target</span>]]<br />" );
 	if ( $config['SYNTAX']['WIKIWORDS'] )
-		echo( "WikiWord<BR>" );
-	echo( "{{url|<SPAN CLASS=\"optionalvalue\">alt</SPAN>|<SPAN CLASS=\"optionalvalue\">width</SPAN>|<SPAN CLASS=\"optionalvalue\">height</SPAN>|<SPAN CLASS=\"optionalvalue\">align</SPAN>|<SPAN CLASS=\"optionalvalue\">vertical-align</SPAN>}}<BR>" );
-	echo( "~~#AAAAAA:grey~~<BR>" );
+		echo( "WikiWord<br />" );
+	echo( "{{url|<span class=\"optionalvalue\">alt</span>|<span class=\"optionalvalue\">width</span>|<span class=\"optionalvalue\">height</span>|<span class=\"optionalvalue\">align</span>|<span class=\"optionalvalue\">vertical-align</span>}}<br />" );
+	echo( "~~#AAAAAA:grey~~<br />" );
 	if ( $config['SYNTAX']['HTMLCODE'] )
-		echo( "%%html code%%<BR>" );
-	echo( "@@name@@<BR>" );
-	echo("\t\t\t</TD>\n");
-	echo("\t\t</TR>\n");
-	echo("\t</TABLE>\n");
+		echo( "%%html code%%<br />" );
+	echo( "@@name@@<br />" );
+	echo("\t\t\t</td>\n");
+	echo("\t\t</tr>\n");
+	echo("\t</table>\n");
+	echo("\t</div>\n");
 }
 
 // display a wiki page
@@ -1106,11 +1120,11 @@ function displayPage( $title, &$mode, $contents="" )
 		case "RestoreWiki":		
 			if ( !isset($config['INTERNAL']['DATA']['RESTORED']) )
 			{			
-				$contents .= "<B>WARNING: Restoring wiki pages will overwrite any existing pages with the same name!</B><BR><BR>" ;
+				$contents .= "<b>WARNING: Restoring wiki pages will overwrite any existing pages with the same name!</b><br /><br />" ;
 				$contents .= "Backup File: ";    
-				$contents .= "<input type=\"hidden\" name=\"MAX_FILE_SIZE\" value=\"".$config['BACKUP']['MAX_SIZE']."\"><BR>";
-				$contents .= "<input name=\"userfile\" type=\"file\" class=\"fileupload\" size=\"32\"><BR><BR>";
-				$contents .= "Enter the password below & click <b>restore</b>.";
+				$contents .= "<input type=\"hidden\" name=\"MAX_FILE_SIZE\" value=\"".$config['BACKUP']['MAX_SIZE']."\" /><br />";
+				$contents .= "<input name=\"userfile\" type=\"file\" class=\"fileupload\" size=\"32\" /><br /><br />";
+				$contents .= "Enter the password below and click <b>restore</b>.";
 			}
 			else
 			{
@@ -1149,26 +1163,24 @@ function displayPage( $title, &$mode, $contents="" )
 	switch ($mode)
 	{
 		case "display":
-			echo("<SPAN CLASS=\"wiki_body\">\n");
+			echo("<span class=\"wiki_body\">\n");
 			echo( wikiparse( $contents ) );
-			echo("</SPAN>\n");
+			echo("</span>\n");
 			break;		
 		case "backupwiki":
-			echo("<SPAN CLASS=\"wiki_body\">\n");
+			echo("<span class=\"wiki_body\">\n");
 			echo( wikiparse( $contents ) );
-			echo("</SPAN>\n");
+			echo("</span>\n");
 			break;		
 		case "restorewiki": 
-			if (!isset($config['INTERNAL']['DATA']['RESTORED']))
-				echo( "<FORM enctype=\"multipart/form-data\"  ACTION=\"".$_SERVER['PHP_SELF']."?page=".$title."\" METHOD=\"post\">\n" );
-			echo("<SPAN CLASS=\"wiki_body\">\n");
+			echo("<span class=\"wiki_body\">\n");
 			echo( $contents );
-			echo("</SPAN>\n");
+			echo("</span>\n");
 			break;			
 		case "edit": case "editnew":
-			echo( "<FORM ACTION=\"".$_SERVER['PHP_SELF']."?page=".$title."\" METHOD=\"post\">\n" );
-			echo( "<TEXTAREA NAME=\"contents\" COLS=\"80\" ROWS=\"24\">".$contents."</TEXTAREA>\n" );	
-			break;
+		  echo( "<form action=\"".$_SERVER['PHP_SELF']."?page=".$title."\" method=\"post\">\n" );
+		  echo( "<textarea name=\"contents\" cols=\"80\" rows=\"24\">".$contents."</textarea>\n" );	
+		  break;
 	}    	
 }
 
@@ -1176,9 +1188,10 @@ function displayPage( $title, &$mode, $contents="" )
 function displayControls( $title, &$mode )
 {
 	global $config;
-	echo("\t<TABLE WIDTH=\"100%\">\n");
-	echo("\t\t<TR>\n");
-	echo("\t\t\t<TD ALIGN=\"left\" valign=\"top\" height=\"40\">\n"); 
+	
+	echo("\t<table width=\"100%\">\n");
+	echo("\t\t<tr>\n");
+	echo("\t\t\t<td align=\"left\" valign=\"top\">\n"); 
 	if ($config['GENERAL']['SHOW_CONTROLS'])
 	{
 		switch ($mode)
@@ -1186,35 +1199,35 @@ function displayControls( $title, &$mode )
 			case "display":
 				if (!(isSpecial($title)))
 				{
-					echo( "\t\t\t\t<FORM ACTION=\"".$_SERVER['PHP_SELF']."?page=".$title."\" METHOD=\"post\">\n" );
-					echo( "\t\t\t\t\t<P>\n" );
+					echo( "\t\t\t\t<form action=\"".$_SERVER['PHP_SELF']."?page=".$title."\" method=\"post\">\n" );
+					echo( "\t\t\t\t\t<p>\n" );
 	
 					if( $config['MISC']['REQ_PASSWORD_TEXT_IN_EDIT_BTN'] )
 					{
-						echo( "<INPUT NAME=\"mode\" VALUE=\"edit\" TYPE=\"hidden\">");
-						echo( "\t\t\t\t\t\t<INPUT VALUE=\"edit " );
+						echo( "<input name=\"mode\" value=\"edit\" type=\"hidden\" />");
+						echo( "\t\t\t\t\t\t<input value=\"edit " );
 						if (isLocked($title))
 							echo($config['LOCALE']['REQ_PASSWORD']);
-						echo( "\" TYPE=\"SUBMIT\">");
+						echo( "\" type=\"submit\" />");
 					}
 					else
 					{
-						echo( "\t\t\t\t\t\t<INPUT NAME=\"mode\" VALUE=\"edit\" TYPE=\"SUBMIT\">" );
+						echo( "\t\t\t\t\t\t<input name=\"mode\" value=\"edit\" type=\"submit\" />" );
 						if (isLocked($title))
 							echo( wikiparse($config['LOCALE']['REQ_PASSWORD']));		
 					} 
 			
-					echo( "\n\t\t\t\t\t</P>\n" );
-					echo( "\t\t\t\t</FORM>\n" );
+					echo( "\n\t\t\t\t\t</p>\n" );
+					echo( "\t\t\t\t</form>\n" );
 				}
 				if ($title=="PageList"&&$config['BACKUP']['ENABLE'])
 				{				
-					echo( "\t\t\t\t<FORM ACTION=\"".$_SERVER['PHP_SELF']."?page=".$title."\" METHOD=\"post\">\n" );
-					echo( "\t\t\t\t\t<P>\n" );
-					echo( "\t\t\t\t\t\t<INPUT NAME=\"mode\" VALUE=\"backup\" TYPE=\"SUBMIT\">" );
-					echo( "\t\t\t\t\t\t<INPUT NAME=\"mode\" VALUE=\"restore\" TYPE=\"SUBMIT\">" );
-					echo( "\n\t\t\t\t\t</P>\n" );
-					echo( "\t\t\t\t</FORM>\n" );
+					echo( "\t\t\t\t<form action=\"".$_SERVER['PHP_SELF']."?page=".$title."\" method=\"post\">\n" );
+					echo( "\t\t\t\t\t<p>\n" );
+					echo( "\t\t\t\t\t\t<input name=\"mode\" value=\"backup\" type=\"submit\" />" );
+					echo( "\t\t\t\t\t\t<input name=\"mode\" value=\"restore\" type=\"submit\" />" );
+					echo( "\n\t\t\t\t\t</p>\n" );
+					echo( "\t\t\t\t</form>\n" );
 				}
 				break;
 			case "backupwiki":
@@ -1238,48 +1251,49 @@ function displayControls( $title, &$mode )
 			case "restorewiki":
 				if ( !isset($config['INTERNAL']['DATA']['RESTORED']) )
 				{
-					echo( "\t\t\t\t\t<P>\n" );
+					echo( "\t\t\t\t\t<p>\n" );
 					echo(wikiparse(" ".$config['LOCALE']['PASSWORD_TEXT'])); 
-					echo("<input name=\"password\" type=\"password\" class=\"pass\" size=\"17\">");
-					echo( "\t\t\t\t\t<INPUT NAME=\"mode\" VALUE=\"restorewiki\" TYPE=\"HIDDEN\">\n" );	
-					echo( "\t\t\t\t\t<INPUT VALUE=\"restore\" TYPE=\"SUBMIT\">\n" );		
-					echo( "\t\t\t\t\t</P>\n" );
-					echo( "\t\t\t\t</FORM>\n" );
+					echo("<input name=\"password\" type=\"password\" class=\"pass\" size=\"17\" />");
+					echo( "\t\t\t\t\t<input name=\"mode\" value=\"restorewiki\" type=\"hidden\" />\n" );	
+					echo( "\t\t\t\t\t<input value=\"restore\" type=\"submit\" />\n" );		
+					echo( "\t\t\t\t\t</p>\n" );
 				}
 				break;
 			case "edit":
-				echo( "\t\t\t\t\t<P>\n" );
+				echo( "\t\t\t\t\t<p>\n" );
 				if (isLocked($title))
 				{
 					echo(wikiparse($config['LOCALE']['PASSWORD_TEXT'])); 
-					echo("<input name=\"password\" type=\"password\" class=\"pass\" size=\"17\">");
+					echo("<input name=\"password\" type=\"password\" class=\"pass\" size=\"17\" />");
 				}
-				echo( "\t\t\t\t\t<INPUT NAME=\"mode\" VALUE=\"save\" TYPE=\"SUBMIT\">\n" );
-				echo( "\t\t\t\t\t<INPUT NAME=\"mode\" VALUE=\"cancel\" TYPE=\"SUBMIT\">\n" );
-				echo( "\t\t\t\t\t</P>\n" );
-				echo( "\t\t\t\t</FORM>\n" );
+				echo( "\t\t\t\t\t<input name=\"mode\" value=\"save\" TYPE=\"submit\" />\n" );
+				echo( "\t\t\t\t\t<input name=\"mode\" value=\"cancel\" TYPE=\"submit\" />\n" );
+				echo( "\t\t\t\t\t</p>\n" );
+				echo( "\t\t\t\t</form>\n" );
 				break;
 			case "editnew":
-				echo( "\t\t\t\t\t<P>\n" );
+				echo( "\t\t\t\t\t<p>\n" );
 				if (isLocked($title))
 				{
 					echo(wikiparse($config['LOCALE']['PASSWORD_TEXT'])); 
-					echo("<input name=\"password\" type=\"password\" class=\"pass\" size=\"17\">");
+					echo("<input name=\"password\" type=\"password\" class=\"pass\" size=\"17\" />");
 				}
-				echo( "\t\t\t\t\t\t<INPUT NAME=\"mode\" VALUE=\"save\" TYPE=\"SUBMIT\">" );
-				echo( "\t\t\t\t\t</P>\n" );
-				echo( "\t\t\t\t</FORM>\n" );
+				echo( "\t\t\t\t\t\t<input name=\"mode\" value=\"save\" type=\"submit\" />" );
+				echo( "\t\t\t\t\t</p>\n" );
+				echo( "\t\t\t\t</form>\n" );
 				break;
 		}
 	}
-	echo("\t\t\t</TD>\n");
-	echo("\t\t\t<TD ALIGN=\"right\" valign=\"top\" height=\"40\">\n");
-	echo("\t\t\t\t<P>\n");
+	echo("\t\t\t</td>\n");
+	echo("\t\t\t<td align=\"right\" valign=\"top\">\n");
+	echo("\t\t\t\t<p>\n");
 	printLicense( $title );
-	echo("\t\t\t\t</P>\n");
-	echo("\t\t\t</TD>\n");
-	echo("\t\t</TR>\n");
-	echo("\t</TABLE>\n");
+	echo("\t\t\t\t</p>\n");
+	echo("\t\t\t</td>\n");
+	echo("\t\t</tr>\n");
+	echo("\t</table>\n");
+	if ( getMode()=="restore" )
+		echo( "\t</form>\n" );
 	if ( ($mode=="edit"||$mode=="editnew")&&$config['SYNTAX']['SHOW_BOX']&&$title!="RestoreWiki" )
 		printWikiSyntax();
 }
@@ -1314,9 +1328,9 @@ if (isset($config['RESTRICTED']['HTTP']))
 			{
 				 Header( "WWW-authenticate: basic realm=\"".$config['GENERAL']['TITLE']."\"" );
 				 Header( 'HTTP/1.0 401 Unauthorized' );
-				 echo( "<HTML>\n\t<HEAD>\n\t\t<TITLE>401 Unauthorised</TITLE>\n\t</HEAD>\n\t<BODY>\n" );
-				 echo( "\t\t<H1>You are not authorised to access ".$config['GENERAL']['TITLE'].".</H1>" );
-				 echo( "\n\t</BODY>\n</HTML>\n" );
+				 echo( "<html>\n\t<head>\n\t\t<title>401 Unauthorised</title>\n\t</head>\n\t<body>\n" );
+				 echo( "\t\t<h1>You are not authorised to access ".$config['GENERAL']['TITLE'].".</h1>" );
+				 echo( "\n\t</body>\n</html>\n" );
 				 exit();
 			}
 		}	
