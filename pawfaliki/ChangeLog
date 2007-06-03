@@ -1,3 +1,7 @@
+== pawfaliki-0.5.1 (03/06/2007) ==
+* Fixed security hole where pages could be created on the server with .extensions! (DanBethell)
+* Should be a lot more XHTML valid. (Jari Seppälä)
+
 == pawfaliki-0.5.0 (26/01/2006) ==
 * Added support for locking entire wiki using HTTPAUTH. (DanBethell & AndyPreston)
 * Fixed bug in updateWiki(). (AndyPreston)
