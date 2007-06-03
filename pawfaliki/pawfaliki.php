@@ -521,7 +521,7 @@ function webpagelink( $text )
 		{
 			$search_for_dot = strrchr( $src, "." ); // don't support names with dots in - prevents creating executable scripts
 			if( !$search_for_dot )		
-				$resultstr = ($src."<a href=\"".$_SERVER['PHP_SELF']."?page=".$src."\" onclick=\"target='$window';\">?</A>");
+				$resultstr = ($src."<a href=\"".$_SERVER['PHP_SELF']."?page=".$src."\" onclick=\"target='$window';\">?</a>");
 			else
 				$resultstr = $src;
 		}
