@@ -262,6 +262,8 @@ function getTitle()
 	else
 	{
 		$page = $_REQUEST['page'];
+		if (count(explode("/", $page))>1)
+			$page = "HomePage";
 	}
 	return $page;
 }
