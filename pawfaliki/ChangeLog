@@ -1,3 +1,6 @@
+== pawfaliki-0.5.2 (15/09/2007 )==
+* Fixed another big hole where files in directories other than Pages could be edited. (Gregor Gresak)
+
 == pawfaliki-0.5.1 (03/06/2007) ==
 * Fixed security hole where pages could be created on the server with .extensions! (DanBethell)
 * Should be a lot more XHTML valid. (Jari Seppälä)
