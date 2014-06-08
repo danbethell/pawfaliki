@@ -90,6 +90,10 @@ $config['RESTRICTED']['RestoreWiki'] = array("admin"); // only admin can restore
 //$config['RESTRICTED']['HomePage'] = array("admin"); // lock the homepage - admin only
 //$config['RESTRICTED']['Group1Page'] = array("admin","group1"); // restrict this page to the listed users
 
+// PRIVATE: secures Wiki editing with password
+$config['PRIVATE']['SET'] = false; // If true, locks the whole wiki
+$config['PRIVATE']['USERS'] = array("admin"); // Only this users can edit with the wiki locked
+
 // IP BLOCKING: blocked IP addresses
 // $config['BLOCKED_IPS'][] = "192.168.0.*"; // block this ip address (can take wildcards)
 
@@ -290,8 +294,14 @@ function authPassword( $title, $password )
 	$auth = false;
 	foreach ($config['RESTRICTED'][$title] as $user)
 	{
-		if ($config['USERS'][$user]==$_POST['password']) 
-		$auth = true;
+		if ($config['USERS'][$user]==$_POST['password'])
+			$auth = true;
+	}
+	if ( !$auth && $config['PRIVATE']['SET']){
+	foreach ($config['PRIVATE']['USERS'] as $user){
+		if ($config['USERS'][$user]==$_POST['password'])
+			$auth = true;
+		}
 	}
 	return $auth;
 }
@@ -742,7 +752,11 @@ function isSpecial( $title )
 function isLocked( $title )
 {
 	global $config;
-	return ( isset( $config['RESTRICTED'][$title] ) );
+	if ( $config['PRIVATE']['SET'] ) {
+		return true;
+	}else{
+		return ( isset( $config['RESTRICTED'][$title] ) );
+	}
 }
 
 // print the appropriate license
